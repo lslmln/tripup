@@ -4,6 +4,7 @@ import GradientGlow from "@/components/GradientGlow";
 import TopNav from "@/components/TopNav";
 import TripList from "@/components/TripList";
 import GlassSearchBar from "@/components/GlassSearchBar";
+import TouchScroll from "@/components/TouchScroll";
 
 export default function Home() {
   return (
@@ -15,25 +16,9 @@ export default function Home() {
             <StatusBar light />
             <TopNav title="Trips" />
           </div>
-          <div className="relative min-h-0 flex-1">
-            <div className="no-scrollbar relative z-10 h-full overflow-y-auto">
-              <TripList />
-            </div>
-            <div
-              className="pointer-events-none absolute inset-x-0 top-0 z-20 h-8"
-              style={{
-                background:
-                  "linear-gradient(to bottom, var(--color-background-primary), transparent)",
-              }}
-            />
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-8"
-              style={{
-                background:
-                  "linear-gradient(to top, var(--color-background-primary), transparent)",
-              }}
-            />
-          </div>
+          <TouchScroll className="no-scrollbar relative z-10 min-h-0 flex-1 overflow-y-auto">
+            <TripList />
+          </TouchScroll>
           <GlassSearchBar />
         </div>
       </PhoneFrame>

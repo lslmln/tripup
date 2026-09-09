@@ -22,20 +22,10 @@ export const mockTrips: Trip[] = [
       "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg/330px-View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg",
   },
   {
-    id: "7",
-    name: "Alps ski trip",
-    dates: "14 - 20 Feb '26",
-    startDate: "2026-02-14",
-    emoji: "⛷️",
-    color: "#6c7a89",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/1_zermatt_evening_2022.jpg/330px-1_zermatt_evening_2022.jpg",
-  },
-  {
     id: "1",
     name: "Lisbon babes",
-    dates: "5 - 10 Sep '26",
-    startDate: "2026-09-05",
+    dates: "5 - 10 Sep '27",
+    startDate: "2027-09-05",
     emoji: "🌉",
     color: "#d97757",
     image:
@@ -60,16 +50,6 @@ export const mockTrips: Trip[] = [
     color: "#3b9e8f",
     image:
       "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/TanahLot_2014.JPG/330px-TanahLot_2014.JPG",
-  },
-  {
-    id: "8",
-    name: "Kenya safari",
-    dates: "10 - 18 Nov '27",
-    startDate: "2027-11-10",
-    emoji: "🦁",
-    color: "#b8863b",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Masai_Mara_at_Sunset.jpg/330px-Masai_Mara_at_Sunset.jpg",
   },
   {
     id: "4",
