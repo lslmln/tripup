@@ -1,4 +1,10 @@
-export default function StatusBar({ light = false }: { light?: boolean }) {
+export default function StatusBar({
+  light = false,
+  time = "9:41",
+}: {
+  light?: boolean;
+  time?: string;
+}) {
   const color = light ? "white" : "black";
   return (
     <div
@@ -6,7 +12,7 @@ export default function StatusBar({ light = false }: { light?: boolean }) {
         light ? "text-white" : "text-black"
       }`}
     >
-      <span className="w-[100px] text-center">9:41</span>
+      <span className="w-[100px] text-center">{time}</span>
       <div className="flex w-[100px] items-center justify-center gap-1">
         <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
           <rect x="0" y="7" width="3" height="5" rx="0.5" fill={color} />
