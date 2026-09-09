@@ -2,7 +2,7 @@ import type { Trip } from "@/lib/mock-trips";
 
 export default function TripListItem({ trip }: { trip: Trip }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-6">
+    <div className="flex cursor-pointer items-center gap-3 px-4 py-6 transition-transform duration-150 ease-out active:scale-[0.97]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={trip.image}
