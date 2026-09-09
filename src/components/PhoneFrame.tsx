@@ -1,4 +1,5 @@
 import SimulatorTouch from "./SimulatorTouch";
+import PageTransition from "./PageTransition";
 
 // Measured from /public/iphone-frame.png (1800x3680 source), which is a
 // real device-mockup image with a transparent, rounded-corner screen cutout.
@@ -25,7 +26,7 @@ export default function PhoneFrame({ children }: { children: React.ReactNode }) 
       style={{ width: FRAME_WIDTH, height: FRAME_HEIGHT }}
     >
       <div
-        className="absolute overflow-hidden rounded-[44px] bg-white"
+        className="absolute overflow-hidden rounded-[44px] bg-background-primary"
         style={{
           left: SCREEN_LEFT * SCALE,
           top: SCREEN_TOP * SCALE,
@@ -34,7 +35,9 @@ export default function PhoneFrame({ children }: { children: React.ReactNode }) 
         }}
       >
         <div className="h-full w-full overflow-hidden">
-          <SimulatorTouch>{children}</SimulatorTouch>
+          <SimulatorTouch>
+            <PageTransition>{children}</PageTransition>
+          </SimulatorTouch>
         </div>
       </div>
 

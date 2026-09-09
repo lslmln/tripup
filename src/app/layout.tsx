@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Karla } from "next/font/google";
 import "./globals.css";
 import GlassFilters from "@/components/GlassFilters";
+import PhoneFrame from "@/components/PhoneFrame";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <GlassFilters />
-        {children}
+        <main className="flex min-h-screen items-center justify-center bg-neutral-200 p-8">
+          <PhoneFrame>{children}</PhoneFrame>
+        </main>
       </body>
     </html>
   );

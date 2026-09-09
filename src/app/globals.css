@@ -13,6 +13,15 @@
   --color-content-primary: #ffffff;
   --color-content-secondary: #b8b8b8;
   --color-border-primary: #ffffff12;
+  --color-card: #1f1f1f;
+  --color-card-light: #333333;
+  --color-icon-neutral: #4d4d4d;
+
+  /* Trip-detail hero glow, sampled from the Lisbon photo (river/sky blue + terracotta rooftops) */
+  --color-glow-blue: #2f6fa8;
+  --color-glow-warm: #c9784a;
+  /* Near-black with a ~10% tinge of the glow blue — deliberately more visible than background-primary's 5% pink */
+  --color-background-detail: #050b11;
 
   /* Glass material (iOS "Liquid Glass" style buttons/bars) */
   --color-glass-fill: rgba(255, 255, 255, 0.12);
@@ -28,6 +37,10 @@
   --text-nav: 18px;
   --text-body: 20px;
   --text-subtitle: 16px;
+  --text-header: 24px;
+
+  /* Radii */
+  --radius-card: 12px;
 }
 
 body {
@@ -43,4 +56,41 @@ body {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Bottom sheet: pulls up from off-screen, ease-out, like an iOS action sheet. */
+.sheet-enter {
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+@starting-style {
+  .sheet-enter {
+    transform: translateY(100%);
+  }
+}
+
+.backdrop-enter {
+  transition: opacity 300ms ease-out;
+}
+@starting-style {
+  .backdrop-enter {
+    opacity: 0;
+  }
+}
+
+/*
+  Page push/pop entrance: the entering screen starts at --enter-x (off-screen)
+  via @starting-style, which the browser resolves on first paint with no JS
+  timing dependency — unlike requestAnimationFrame, which this preview
+  environment throttles/pauses in backgrounded tabs, making a JS "flip after
+  one frame" trick unreliable. The outgoing screen (see PageTransition.tsx)
+  doesn't need this: it's an existing element getting a new committed style,
+  which CSS transitions pick up automatically on any state update.
+*/
+.screen-enter {
+  transition: transform var(--nav-duration, 350ms) var(--nav-ease);
+}
+@starting-style {
+  .screen-enter {
+    transform: translateX(var(--enter-x));
+  }
 }
