@@ -18,7 +18,7 @@ import GlassButton from "./GlassButton";
 import TouchScroll from "./TouchScroll";
 import LocationSearchPanel from "./LocationSearchPanel";
 import DurationPickerSheet from "./DurationPickerSheet";
-import DateTimePickerSheet, { type DateField } from "./DateTimePickerSheet";
+import DateTimeFieldEditor from "./DateTimeFieldEditor";
 import type { Location } from "@/lib/mock-locations";
 import { mockMembers, type Member } from "@/lib/mock-members";
 import { getStoredMembers } from "@/lib/members-store";
@@ -84,6 +84,31 @@ function SheetOption({
           </span>
         )}
       </div>
+    </button>
+  );
+}
+
+function DateChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full px-3 py-1.5 font-karla text-subtitle transition-colors duration-150 ease-out active:scale-[0.96]"
+      style={
+        active
+          ? { background: "var(--color-brand)", color: "#fff" }
+          : { background: "var(--color-toggle-off)", color: "var(--color-content-primary)" }
+      }
+    >
+      {label}
     </button>
   );
 }
@@ -172,6 +197,8 @@ const INITIAL_TOGGLES: PollToggles = {
 
 type Screen = "menu" | "poll" | "location" | "activity";
 
+type DateField = "startDate" | "startTime" | "endDate" | "endTime";
+
 export default function AddSheet({
   tripId,
   onClose,
@@ -198,12 +225,13 @@ export default function AddSheet({
     tripMembers.map((member) => member.id),
   );
   // Defaults to the moment the sheet was opened, ending an hour later.
-  const [activityAllDay, setActivityAllDay] = useState(false);
   const [activityStart, setActivityStart] = useState<Date>(() => new Date());
   const [activityEnd, setActivityEnd] = useState<Date>(
     () => new Date(Date.now() + 60 * 60 * 1000),
   );
-  const [dateTimePickerField, setDateTimePickerField] = useState<DateField | null>(null);
+  // Which chip's editor (if any) is expanded inline below the Starts/Ends
+  // card — tapping the active chip again collapses it.
+  const [activeDateField, setActiveDateField] = useState<DateField | null>(null);
   const [bodyHeight, setBodyHeight] = useState<number | null>(null);
 
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -272,7 +300,7 @@ export default function AddSheet({
     if (pendingScreenRef.current) return;
     const activePanel = panelRefFor(screen).current;
     if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
-  }, [screen, locationsSignature, toggles.limitDuration, createActivity, activityAllDay]);
+  }, [screen, locationsSignature, toggles.limitDuration, createActivity, activeDateField]);
 
   // Focus the location search input once its screen has finished fading in.
   useEffect(() => {
@@ -332,6 +360,10 @@ export default function AddSheet({
     setAttendeeIds((prev) =>
       prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id],
     );
+  }
+
+  function toggleDateField(field: DateField) {
+    setActiveDateField((prev) => (prev === field ? null : field));
   }
 
   function openLocationSearch(index: number) {
@@ -564,47 +596,53 @@ export default function AddSheet({
                         Starts
                       </span>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setDateTimePickerField("startDate")}
-                          className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
-                        >
-                          {formatDateChip(activityStart)}
-                        </button>
-                        {!activityAllDay && (
-                          <button
-                            type="button"
-                            onClick={() => setDateTimePickerField("startTime")}
-                            className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
-                          >
-                            {formatTimeChip(activityStart)}
-                          </button>
-                        )}
+                        <DateChip
+                          label={formatDateChip(activityStart)}
+                          active={activeDateField === "startDate"}
+                          onClick={() => toggleDateField("startDate")}
+                        />
+                        <DateChip
+                          label={formatTimeChip(activityStart)}
+                          active={activeDateField === "startTime"}
+                          onClick={() => toggleDateField("startTime")}
+                        />
                       </div>
                     </div>
+                    {(activeDateField === "startDate" || activeDateField === "startTime") && (
+                      <div className="border-t border-border-primary">
+                        <DateTimeFieldEditor
+                          mode={activeDateField === "startDate" ? "date" : "time"}
+                          value={activityStart}
+                          onChange={setActivityStart}
+                        />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between border-t border-border-primary px-4 py-3">
                       <span className="font-karla text-body font-medium text-content-primary">
                         Ends
                       </span>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setDateTimePickerField("endDate")}
-                          className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
-                        >
-                          {formatDateChip(activityEnd)}
-                        </button>
-                        {!activityAllDay && (
-                          <button
-                            type="button"
-                            onClick={() => setDateTimePickerField("endTime")}
-                            className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
-                          >
-                            {formatTimeChip(activityEnd)}
-                          </button>
-                        )}
+                        <DateChip
+                          label={formatDateChip(activityEnd)}
+                          active={activeDateField === "endDate"}
+                          onClick={() => toggleDateField("endDate")}
+                        />
+                        <DateChip
+                          label={formatTimeChip(activityEnd)}
+                          active={activeDateField === "endTime"}
+                          onClick={() => toggleDateField("endTime")}
+                        />
                       </div>
                     </div>
+                    {(activeDateField === "endDate" || activeDateField === "endTime") && (
+                      <div className="border-t border-border-primary">
+                        <DateTimeFieldEditor
+                          mode={activeDateField === "endDate" ? "date" : "time"}
+                          value={activityEnd}
+                          onChange={setActivityEnd}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
@@ -668,19 +706,6 @@ export default function AddSheet({
           minutes={durationMinutes}
           onChange={setDurationMinutes}
           onClose={() => setDurationPickerOpen(false)}
-        />
-      )}
-
-      {dateTimePickerField && (
-        <DateTimePickerSheet
-          start={activityStart}
-          end={activityEnd}
-          allDay={activityAllDay}
-          onAllDayChange={setActivityAllDay}
-          onChangeStart={setActivityStart}
-          onChangeEnd={setActivityEnd}
-          initialField={dateTimePickerField}
-          onClose={() => setDateTimePickerField(null)}
         />
       )}
     </>
