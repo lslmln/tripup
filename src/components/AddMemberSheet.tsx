@@ -2,7 +2,9 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { Check, CheckSquare, MagnifyingGlass, Square, X } from "@phosphor-icons/react";
+import GlassButton from "./GlassButton";
 import StatusBar from "./StatusBar";
+import { glassStyle } from "./glass";
 import { mockCandidates } from "@/lib/mock-candidates";
 
 const DURATION_MS = 300;
@@ -48,35 +50,79 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
         className="backdrop-enter absolute inset-0 z-40 bg-black/60"
         onClick={() => setClosing(true)}
       />
+      {/* Status bar stays crisp above the dimmed backdrop, in the 44px strip the sheet leaves uncovered. */}
+      <div className="absolute inset-x-0 top-0 z-50">
+        <StatusBar light />
+      </div>
       <div
         ref={sheetRef}
-        className="sheet-enter absolute inset-0 z-50 flex flex-col bg-background-detail"
+        className="sheet-enter absolute inset-x-0 top-11 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[32px] bg-card"
       >
-        <StatusBar light />
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => setClosing(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-card-light text-content-primary"
-          >
+        <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-white/30" />
+
+        <div className="flex shrink-0 items-center justify-between px-4 py-3">
+          <GlassButton ariaLabel="Close" onClick={() => setClosing(true)}>
             <X size={20} />
-          </button>
+          </GlassButton>
           <p className="font-karla text-nav font-medium text-content-primary">
             Add member
           </p>
-          <button
-            type="button"
-            aria-label="Done"
-            onClick={() => setClosing(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-card-light text-content-primary"
-          >
+          <GlassButton ariaLabel="Done" onClick={() => setClosing(true)}>
             <Check size={20} weight="bold" />
-          </button>
+          </GlassButton>
         </div>
 
-        <div className="mx-4 mb-3 flex flex-wrap items-center gap-2 rounded-card bg-card-light px-4 py-2">
-          <MagnifyingGlass size={20} className="shrink-0 text-content-secondary" />
+        <div className="relative min-h-0 flex-1">
+          <div className="no-scrollbar h-full overflow-y-auto px-4 pt-3 pb-23">
+            <div className="divide-y divide-border-primary">
+              {mockCandidates.map((candidate) => {
+                const checked = selectedIds.includes(candidate.id);
+                return (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    onClick={() => toggle(candidate.id)}
+                    className="flex w-full items-center gap-3 py-3 text-left"
+                  >
+                    {checked ? (
+                      <CheckSquare
+                        size={24}
+                        weight="fill"
+                        className="shrink-0"
+                        style={{ color: "var(--color-brand)" }}
+                      />
+                    ) : (
+                      <Square size={24} className="shrink-0 text-content-secondary" />
+                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={candidate.avatar}
+                      alt=""
+                      className="h-11 w-11 shrink-0 rounded-full object-cover"
+                    />
+                    <span className="font-karla text-body font-medium text-content-primary">
+                      {candidate.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-20"
+            style={{
+              background:
+                "linear-gradient(to top, var(--color-card) 0%, color-mix(in srgb, var(--color-card) 70%, transparent) 40%, color-mix(in srgb, var(--color-card) 25%, transparent) 75%, transparent 100%)",
+            }}
+            aria-hidden
+          />
+        </div>
+
+        <div
+          className="absolute inset-x-4 bottom-8 z-30 flex min-h-12 flex-wrap items-center gap-2 rounded-full px-4 py-2 text-content-primary"
+          style={glassStyle}
+        >
+          <MagnifyingGlass size={20} className="shrink-0" />
           {selected.map((candidate) => (
             <span
               key={candidate.id}
@@ -96,42 +142,6 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
           {selected.length === 0 && (
             <span className="font-karla text-nav text-content-secondary">Search</span>
           )}
-        </div>
-
-        <div className="no-scrollbar flex-1 overflow-y-auto px-4 pb-6">
-          <div className="divide-y divide-border-primary">
-            {mockCandidates.map((candidate) => {
-              const checked = selectedIds.includes(candidate.id);
-              return (
-                <button
-                  key={candidate.id}
-                  type="button"
-                  onClick={() => toggle(candidate.id)}
-                  className="flex w-full items-center gap-3 py-3 text-left"
-                >
-                  {checked ? (
-                    <CheckSquare
-                      size={24}
-                      weight="fill"
-                      className="shrink-0"
-                      style={{ color: "var(--color-brand)" }}
-                    />
-                  ) : (
-                    <Square size={24} className="shrink-0 text-content-secondary" />
-                  )}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={candidate.avatar}
-                    alt=""
-                    className="h-11 w-11 shrink-0 rounded-full object-cover"
-                  />
-                  <span className="font-karla text-body font-medium text-content-primary">
-                    {candidate.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
         </div>
       </div>
     </>
