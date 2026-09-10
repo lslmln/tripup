@@ -8,9 +8,11 @@ import { useEffect, useRef } from "react";
 export default function TouchScroll({
   children,
   className,
+  style,
 }: {
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ startY: number; startScrollTop: number; dragging: boolean } | null>(
@@ -69,7 +71,7 @@ export default function TouchScroll({
     <div
       ref={scrollRef}
       className={className}
-      style={{ touchAction: "none" }}
+      style={{ ...style, touchAction: "none" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
