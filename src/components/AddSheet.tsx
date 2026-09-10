@@ -86,13 +86,17 @@ function ToggleRow({
   label,
   checked,
   onChange,
+  bordered = true,
 }: {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  bordered?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div
+      className={`flex items-center justify-between px-4 py-3 ${bordered ? "border-t border-border-primary" : ""}`}
+    >
       <span className="font-karla text-body font-medium text-content-primary">
         {label}
       </span>
@@ -406,11 +410,12 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
 
-              <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
+              <div className="overflow-hidden rounded-card bg-card-light">
                 <ToggleRow
                   label="Limit duration"
                   checked={toggles.limitDuration}
                   onChange={updateToggle("limitDuration")}
+                  bordered={false}
                 />
                 {toggles.limitDuration && (
                   <div className="flex items-center justify-between px-4 py-3">
