@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
 import SegmentedControl from "./SegmentedControl";
 import TimelineSection from "./TimelineSection";
 import TouchScroll from "./TouchScroll";
 import TripGlow from "./TripGlow";
+import GlassSearchBar from "./GlassSearchBar";
+import AddSheet from "./AddSheet";
 import type { Trip } from "@/lib/mock-trips";
 import type { TimelineSection as TimelineSectionType } from "@/lib/mock-timeline";
 
@@ -17,6 +19,8 @@ export default function TripDetailScreen({
   trip: Trip;
   timeline: TimelineSectionType[];
 }) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   useEffect(() => {
     // Land on Today by default; earlier days are reachable by scrolling up.
     document.getElementById("section-today")?.scrollIntoView({ block: "start" });
@@ -45,6 +49,8 @@ export default function TripDetailScreen({
           aria-hidden
         />
       </div>
+      <GlassSearchBar onAddClick={() => setSheetOpen(true)} />
+      {sheetOpen && <AddSheet onClose={() => setSheetOpen(false)} />}
     </div>
   );
 }
