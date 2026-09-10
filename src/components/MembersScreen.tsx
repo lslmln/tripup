@@ -7,9 +7,11 @@ import AddMemberSheet from "./AddMemberSheet";
 import GlassButton from "./GlassButton";
 import GlassSearchBar from "./GlassSearchBar";
 import StatusBar from "./StatusBar";
+import TouchScroll from "./TouchScroll";
 import type { Trip } from "@/lib/mock-trips";
 import type { Member } from "@/lib/mock-members";
 import type { Candidate } from "@/lib/mock-candidates";
+import { getStoredMembers, setStoredMembers } from "@/lib/members-store";
 
 export default function MembersScreen({
   trip,
@@ -19,7 +21,9 @@ export default function MembersScreen({
   members: Member[];
 }) {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [members, setMembers] = useState<Member[]>(() =>
+    getStoredMembers(trip.id, initialMembers),
+  );
 
   const addMembers = (candidates: Candidate[]) => {
     setMembers((prev) => {
@@ -27,7 +31,9 @@ export default function MembersScreen({
       const newMembers = candidates
         .filter((candidate) => !existingIds.has(candidate.id))
         .map(({ id, name, avatar }) => ({ id, name, avatar }));
-      return [...prev, ...newMembers];
+      const next = [...prev, ...newMembers];
+      setStoredMembers(trip.id, next);
+      return next;
     });
   };
 
@@ -47,47 +53,49 @@ export default function MembersScreen({
         </div>
       </div>
 
-      <div className="flex shrink-0 justify-center px-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={trip.image}
-          alt=""
-          className="h-40 w-40 rounded-full object-cover"
-        />
-      </div>
-
-      <div className="shrink-0 px-4 pt-3 pb-6">
-        <p className="font-karla text-header font-medium leading-none text-content-primary">
-          {trip.name}
-        </p>
-        <p className="mt-1 font-karla text-subtitle leading-none text-content-secondary">
-          {trip.dates}
-        </p>
-      </div>
-
       <div className="relative min-h-0 flex-1">
-        <div className="no-scrollbar h-full overflow-y-auto px-4 pb-23">
-          <div className="mb-3 divide-y divide-border-primary overflow-hidden rounded-card bg-card">
-            {members.map((member) => (
-              <div key={member.id} className="flex items-center gap-3 px-4 py-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={member.avatar}
-                  alt=""
-                  className="h-11 w-11 shrink-0 rounded-full object-cover"
-                />
-                <span className="flex-1 font-karla text-body font-medium text-content-primary">
-                  {member.name}
-                </span>
-                {member.isOrganiser && (
-                  <span className="font-karla text-body text-content-primary">
-                    Organiser
-                  </span>
-                )}
-              </div>
-            ))}
+        <TouchScroll className="no-scrollbar h-full overflow-y-auto pb-23">
+          <div className="flex justify-center px-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={trip.image}
+              alt=""
+              className="h-40 w-40 rounded-full object-cover"
+            />
           </div>
-        </div>
+
+          <div className="px-4 pt-3 pb-6">
+            <p className="font-karla text-header font-medium leading-none text-content-primary">
+              {trip.name}
+            </p>
+            <p className="mt-1 font-karla text-subtitle leading-none text-content-secondary">
+              {trip.dates}
+            </p>
+          </div>
+
+          <div className="px-4">
+            <div className="mb-3 divide-y divide-border-primary overflow-hidden rounded-card bg-card">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center gap-3 px-4 py-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={member.avatar}
+                    alt=""
+                    className="h-11 w-11 shrink-0 rounded-full object-cover"
+                  />
+                  <span className="flex-1 font-karla text-body font-medium text-content-primary">
+                    {member.name}
+                  </span>
+                  {member.isOrganiser && (
+                    <span className="font-karla text-body text-content-primary">
+                      Organiser
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </TouchScroll>
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-20"
           style={{

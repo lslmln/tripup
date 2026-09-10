@@ -13,7 +13,13 @@ export default function TouchScroll({
   className?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ startY: number; startScrollTop: number } | null>(null);
+  const drag = useRef<{ startY: number; startScrollTop: number; dragging: boolean } | null>(
+    null,
+  );
+
+  // Below this much movement, a press is treated as a tap (let it click
+  // through to the row underneath) rather than a scroll drag.
+  const DRAG_THRESHOLD_PX = 6;
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -25,16 +31,37 @@ export default function TouchScroll({
 
   function onPointerDown(e: React.PointerEvent) {
     if (!scrollRef.current) return;
-    drag.current = { startY: e.clientY, startScrollTop: scrollRef.current.scrollTop };
+    drag.current = {
+      startY: e.clientY,
+      startScrollTop: scrollRef.current.scrollTop,
+      dragging: false,
+    };
+    // Pointer capture is NOT taken here — only once real dragging is
+    // detected in onPointerMove. Capturing on every press also captures the
+    // compatibility mouse/click events, so a plain tap's click would land on
+    // this container instead of the row button underneath, breaking taps.
   }
 
   function onPointerMove(e: React.PointerEvent) {
     if (!drag.current || !scrollRef.current) return;
     const delta = e.clientY - drag.current.startY;
+    if (!drag.current.dragging) {
+      if (Math.abs(delta) < DRAG_THRESHOLD_PX) return;
+      drag.current.dragging = true;
+      // Once a real drag starts, capture the pointer so every subsequent
+      // move/up event stays routed here regardless of what's visually under
+      // the cursor (e.g. a floating glass search bar that's a sibling, not a
+      // descendant) — without this, dragging over such an element hands
+      // pointermove to it instead, killing the scroll mid-gesture.
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
     scrollRef.current.scrollTop = drag.current.startScrollTop - delta;
   }
 
-  function endDrag() {
+  function endDrag(e: React.PointerEvent) {
+    if (drag.current?.dragging && e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     drag.current = null;
   }
 
@@ -46,7 +73,7 @@ export default function TouchScroll({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
-      onPointerLeave={endDrag}
+      onPointerCancel={endDrag}
     >
       {children}
     </div>
