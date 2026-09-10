@@ -57,6 +57,12 @@ function WheelColumn({
   function onPointerDown(e: React.PointerEvent) {
     if (!ref.current) return;
     drag.current = { startY: e.clientY, startScrollTop: ref.current.scrollTop };
+    // Columns are narrow, so a normal drag drifts outside their bounds
+    // almost immediately. Without capture, pointermove then routes to
+    // whatever's under the finger instead of this column, killing the
+    // drag — capturing keeps every subsequent move/up event targeted here
+    // regardless of where the pointer wanders, matching TouchScroll.
+    e.currentTarget.setPointerCapture(e.pointerId);
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -65,7 +71,10 @@ function WheelColumn({
     ref.current.scrollTop = drag.current.startScrollTop - delta;
   }
 
-  function endDrag() {
+  function endDrag(e: React.PointerEvent) {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     drag.current = null;
   }
 
@@ -91,7 +100,7 @@ function WheelColumn({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
-      onPointerLeave={endDrag}
+      onPointerCancel={endDrag}
       className="no-scrollbar snap-y snap-mandatory overflow-y-scroll"
       style={{
         height: WHEEL_HEIGHT,
