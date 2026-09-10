@@ -524,9 +524,7 @@ export default function AddSheet({
               <span className="font-karla text-body font-medium text-content-primary">
                 Add activity
               </span>
-              <GlassButton ariaLabel="Save activity" onClick={() => setClosing(true)}>
-                <Check size={22} />
-              </GlassButton>
+              <div className="h-11 w-11 shrink-0" aria-hidden />
             </div>
 
             <div className="flex flex-col gap-4 px-4 pt-4">
