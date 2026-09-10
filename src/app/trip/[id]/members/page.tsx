@@ -43,8 +43,14 @@ export default async function TripMembersPage({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-3">
         <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card">
+          <button
+            type="button"
+            className="w-full px-4 py-3 text-left font-karla text-body font-medium text-blue-400"
+          >
+            Add a member
+          </button>
           {mockMembers.map((member) => (
             <div
               key={member.id}
@@ -55,18 +61,12 @@ export default async function TripMembersPage({
                 {member.name}
               </span>
               {member.isOrganiser && (
-                <span className="font-karla text-subtitle text-content-secondary">
+                <span className="font-karla text-body text-content-primary">
                   Organiser
                 </span>
               )}
             </div>
           ))}
-          <button
-            type="button"
-            className="w-full px-4 py-3 text-left font-karla text-body font-medium text-blue-400"
-          >
-            Add a member
-          </button>
         </div>
       </div>
     </div>
