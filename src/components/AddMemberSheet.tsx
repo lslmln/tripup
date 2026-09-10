@@ -82,6 +82,7 @@ export default function AddMemberSheet({
           <GlassButton
             ariaLabel="Done"
             onClick={handleDone}
+            disabled={selected.length === 0}
             style={
               selected.length > 0
                 ? { background: "var(--color-brand)", border: "1px solid var(--color-brand)" }

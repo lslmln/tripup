@@ -211,6 +211,7 @@ export default function AddSheet({
   const [contentVisible, setContentVisible] = useState(true);
   const [fadeDuration, setFadeDuration] = useState(FADE_IN_MS);
   const [toggles, setToggles] = useState<PollToggles>(INITIAL_TOGGLES);
+  const [pollQuestion, setPollQuestion] = useState("");
   const [locations, setLocations] = useState<(Location | null)[]>([null]);
   const [locationSheetTarget, setLocationSheetTarget] = useState<number | null>(null);
   const [locationQuery, setLocationQuery] = useState("");
@@ -407,6 +408,11 @@ export default function AddSheet({
           .filter((loc): loc is Location => loc !== null)
           .map((loc) => loc.id);
 
+  // The save tick only turns on (and becomes tappable) once there's a
+  // question and at least two options to vote on.
+  const filledLocationsCount = locations.filter((loc): loc is Location => loc !== null).length;
+  const pollValid = pollQuestion.trim().length > 0 && filledLocationsCount >= 2;
+
   return (
     <>
       <div
@@ -457,7 +463,16 @@ export default function AddSheet({
               <span className="font-karla text-body font-medium text-content-primary">
                 Add poll
               </span>
-              <GlassButton ariaLabel="Save poll" onClick={() => setClosing(true)}>
+              <GlassButton
+                ariaLabel="Save poll"
+                onClick={() => setClosing(true)}
+                disabled={!pollValid}
+                style={
+                  pollValid
+                    ? { background: "var(--color-brand)", border: "1px solid var(--color-brand)" }
+                    : undefined
+                }
+              >
                 <Check size={22} />
               </GlassButton>
             </div>
@@ -465,6 +480,8 @@ export default function AddSheet({
             <div className="flex flex-col gap-4 px-4 pt-4">
               <input
                 type="text"
+                value={pollQuestion}
+                onChange={(e) => setPollQuestion(e.target.value)}
                 placeholder="Question"
                 className="w-full rounded-card bg-card-light px-4 py-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
               />
