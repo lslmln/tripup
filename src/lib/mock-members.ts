@@ -2,12 +2,39 @@ export type Member = {
   id: string;
   name: string;
   isOrganiser?: boolean;
+  avatar: string;
 };
 
 export const mockMembers: Member[] = [
-  { id: "1", name: "Jessica" },
-  { id: "2", name: "Becky", isOrganiser: true },
-  { id: "3", name: "May" },
-  { id: "4", name: "Nadia" },
-  { id: "5", name: "Lexi" },
+  // Solo candid photo.
+  { id: "1", name: "Ari", avatar: "https://i.pravatar.cc/150?img=16" },
+  // Group selfie with friends.
+  {
+    id: "2",
+    name: "Becky",
+    isOrganiser: true,
+    avatar:
+      "https://images.unsplash.com/photo-1758272133786-ee98adcc6837?w=300&h=300&fit=crop&crop=faces&auto=format&q=80",
+  },
+  // With her dog.
+  {
+    id: "3",
+    name: "Ren",
+    avatar:
+      "https://images.unsplash.com/photo-1709653383462-685f84afe66a?w=300&h=300&fit=crop&crop=faces&auto=format&q=80",
+  },
+  // With her partner, black and white.
+  {
+    id: "4",
+    name: "Nic",
+    avatar:
+      "https://images.unsplash.com/photo-1745728947238-f901afdd3eb2?w=300&h=300&fit=crop&crop=faces&auto=format&q=80",
+  },
+  // Candid outdoor photo.
+  {
+    id: "5",
+    name: "Lexi",
+    avatar:
+      "https://images.unsplash.com/photo-1500771181897-517651ae4eda?w=300&h=300&fit=crop&crop=faces&auto=format&q=80",
+  },
 ];
