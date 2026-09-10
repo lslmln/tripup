@@ -126,11 +126,13 @@ function ToggleRow({
   checked,
   onChange,
   bordered = true,
+  disabled = false,
 }: {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   bordered?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div
@@ -139,7 +141,7 @@ function ToggleRow({
       <span className="font-karla text-body font-medium text-content-primary">
         {label}
       </span>
-      <Toggle checked={checked} onChange={onChange} ariaLabel={label} />
+      <Toggle checked={checked} onChange={onChange} ariaLabel={label} disabled={disabled} />
     </div>
   );
 }
@@ -196,7 +198,7 @@ type PollToggles = {
 };
 
 const INITIAL_TOGGLES: PollToggles = {
-  limitDuration: false,
+  limitDuration: true,
   multipleAnswers: false,
   addingOptions: true,
   revoting: true,
@@ -552,6 +554,7 @@ export default function AddSheet({
                   checked={toggles.limitDuration}
                   onChange={updateToggle("limitDuration")}
                   bordered={false}
+                  disabled
                 />
                 {toggles.limitDuration && (
                   <div className="flex items-center justify-between px-4 py-3">
@@ -571,21 +574,25 @@ export default function AddSheet({
                   label="Allow multiple answers"
                   checked={toggles.multipleAnswers}
                   onChange={updateToggle("multipleAnswers")}
+                  disabled
                 />
                 <ToggleRow
                   label="Allow adding options"
                   checked={toggles.addingOptions}
                   onChange={updateToggle("addingOptions")}
+                  disabled
                 />
                 <ToggleRow
                   label="Allow revoting"
                   checked={toggles.revoting}
                   onChange={updateToggle("revoting")}
+                  disabled
                 />
                 <ToggleRow
                   label="Show who voted"
                   checked={toggles.showWhoVoted}
                   onChange={updateToggle("showWhoVoted")}
+                  disabled
                 />
               </div>
 
