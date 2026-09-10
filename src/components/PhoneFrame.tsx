@@ -26,7 +26,7 @@ export default function PhoneFrame({ children }: { children: React.ReactNode }) 
       style={{ width: FRAME_WIDTH, height: FRAME_HEIGHT }}
     >
       <div
-        className="absolute overflow-hidden rounded-[44px] bg-background-primary"
+        className="absolute isolate overflow-hidden rounded-[44px] bg-background-primary"
         style={{
           left: SCREEN_LEFT * SCALE,
           top: SCREEN_TOP * SCALE,
