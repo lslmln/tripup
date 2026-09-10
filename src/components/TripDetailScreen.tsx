@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
 import SegmentedControl from "./SegmentedControl";
@@ -21,7 +21,13 @@ export default function TripDetailScreen({
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so this runs before the browser's first
+  // paint of this screen: the screen mounts off-screen (about to slide in
+  // via PageTransition), so scrolling here happens while nothing is visible
+  // yet. A passive useEffect instead would fire after that first paint —
+  // i.e. partway through the slide-in — so the list would visibly jump from
+  // its top to "Today" mid-animation instead of already being there.
+  useLayoutEffect(() => {
     // Land on Today by default; earlier days are reachable by scrolling up.
     document.getElementById("section-today")?.scrollIntoView({ block: "start" });
   }, []);
