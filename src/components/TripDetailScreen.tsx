@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Empty } from "@phosphor-icons/react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
@@ -23,10 +23,11 @@ import { computeOwed } from "@/lib/balance";
 import { formatMoney } from "@/lib/bills";
 import { formatClockTime } from "@/lib/format-datetime";
 
-// How long after a balance appears the simulated incoming payment lands —
-// there's no real multi-user backend here, so this stands in for another
-// member settling up on their own end and the notification arriving.
-const SIMULATED_PAYMENT_DELAY_MS = 12000;
+// There's no real multi-user backend here, so incoming payments are
+// simulated: every debtor still owed gets paid off in full, one at a time,
+// this many ms apart — standing in for other members settling up on their
+// own end and the notification for each arriving in turn.
+const SIMULATED_PAYMENT_INTERVAL_MS = 5000;
 const NOTIFICATION_AUTO_DISMISS_MS = 6000;
 
 export default function TripDetailScreen({
@@ -50,7 +51,7 @@ export default function TripDetailScreen({
   const [notification, setNotification] = useState<{ memberName: string; amount: number } | null>(
     null,
   );
-  const hasSimulatedPayment = useRef(false);
+  const paymentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function addTodayItem(item: TimelineItem) {
     setTimeline((prev) => {
@@ -104,19 +105,24 @@ export default function TripDetailScreen({
 
   // Every bill's payer is the current user, so this is exactly what every
   // other trip member still owes, aggregated across every activity's bills.
-  const owed = computeOwed(timeline, transactions);
+  // Memoized so the payment-chain effect below only re-fires when the
+  // underlying timeline/transactions actually change, not on every render.
+  const owed = useMemo(() => computeOwed(timeline, transactions), [timeline, transactions]);
   const totalOwed = owed.reduce((sum, entry) => sum + entry.amount, 0);
 
   // Real payments come from other trip members' own devices, not anything
-  // Ari does here — this simulates that one-time, settling the first
-  // debtor in full, so the notification and Balance/Transactions flow are
-  // actually demonstrable without a real multi-user backend.
+  // Ari does here — this simulates them arriving one at a time, spaced
+  // SIMULATED_PAYMENT_INTERVAL_MS apart, so the notification and
+  // Balance/Transactions flow are demonstrable without a real backend.
+  // Settling the first debtor removes them from `owed`, which re-triggers
+  // this effect and schedules the next one — a self-perpetuating chain
+  // rather than an explicit queue.
   useEffect(() => {
-    if (owed.length === 0 || hasSimulatedPayment.current) return;
-    hasSimulatedPayment.current = true;
+    if (owed.length === 0 || paymentTimerRef.current !== null) return;
     const [debtor] = owed;
     const member = memberById(debtor.memberId);
-    const timeout = setTimeout(() => {
+    paymentTimerRef.current = setTimeout(() => {
+      paymentTimerRef.current = null;
       const transaction: Transaction = {
         id: `txn-${Date.now()}`,
         memberId: debtor.memberId,
@@ -125,10 +131,18 @@ export default function TripDetailScreen({
       };
       setTransactions(addStoredTransaction(trip.id, transaction));
       setNotification({ memberName: member?.name ?? "Someone", amount: debtor.amount });
-    }, SIMULATED_PAYMENT_DELAY_MS);
-    return () => clearTimeout(timeout);
+    }, SIMULATED_PAYMENT_INTERVAL_MS);
+    // No cleanup here: a re-render while this timer is in flight (e.g. a
+    // new bill changing `owed`) must not cancel a payment already queued —
+    // only unmount should ever clear it (see the effect below).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [owed.length]);
+  }, [owed]);
+
+  useEffect(() => {
+    return () => {
+      if (paymentTimerRef.current !== null) clearTimeout(paymentTimerRef.current);
+    };
+  }, []);
 
   // Notification auto-dismisses like a real iOS banner if you don't tap it.
   useEffect(() => {
@@ -165,9 +179,9 @@ export default function TripDetailScreen({
           )}
 
           {activeTab === 1 && (
-            <div className="px-4 pt-3 pb-23">
+            <div className="flex min-h-full flex-col px-4 pt-3 pb-23">
               {owed.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-24">
+                <div className="m-auto flex flex-col items-center gap-3">
                   <Empty size={40} weight="fill" className="text-content-secondary" />
                   <span className="font-karla text-body text-content-secondary">
                     You&apos;re all settled up
@@ -211,9 +225,9 @@ export default function TripDetailScreen({
           )}
 
           {activeTab === 2 && (
-            <div className="px-4 pt-3 pb-23">
+            <div className="flex min-h-full flex-col px-4 pt-3 pb-23">
               {transactions.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-24">
+                <div className="m-auto flex flex-col items-center gap-3">
                   <Empty size={40} weight="fill" className="text-content-secondary" />
                   <span className="font-karla text-body text-content-secondary">
                     No transactions received yet

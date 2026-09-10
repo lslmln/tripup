@@ -264,9 +264,9 @@ export default function ActivityDetailScreen({
           </div>
           </>
           ) : (
-          <div className="px-4">
+          <div className="flex min-h-full flex-col px-4">
             {!item.bills || item.bills.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-20">
+              <div className="m-auto flex flex-col items-center gap-3">
                 <Empty size={40} weight="fill" className="text-content-secondary" />
                 <span className="font-karla text-body text-content-secondary">
                   No bills added yet

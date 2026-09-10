@@ -4,6 +4,7 @@ import "./globals.css";
 import GlassFilters from "@/components/GlassFilters";
 import PhoneFrame from "@/components/PhoneFrame";
 import MobileUnsupportedNotice from "@/components/MobileUnsupportedNotice";
+import ReplayButton from "@/components/ReplayButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <GlassFilters />
         <MobileUnsupportedNotice />
+        <ReplayButton />
         <main className="hidden min-h-screen items-center justify-center bg-neutral-200 p-8 md:flex">
           <PhoneFrame>{children}</PhoneFrame>
         </main>
