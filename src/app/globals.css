@@ -16,6 +16,8 @@
   --color-card: #1f1f1f;
   --color-card-light: #333333;
   --color-icon-neutral: #4d4d4d;
+  /* iOS system yellow — used for alert states like "poll in progress" */
+  --color-status-warning: #ffcc00;
 
   /* Trip-detail hero glow, sampled from the Lisbon photo (river/sky blue + terracotta rooftops) */
   --color-glow-blue: #2f6fa8;
