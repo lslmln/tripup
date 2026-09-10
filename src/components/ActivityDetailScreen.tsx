@@ -6,9 +6,8 @@ import {
   CaretLeft,
   CaretRight,
   DotsThreeOutline,
+  Empty,
   MapPin,
-  Plus,
-  Prohibit,
   Warning,
 } from "@phosphor-icons/react";
 import AddBillSheet from "./AddBillSheet";
@@ -261,13 +260,6 @@ export default function ActivityDetailScreen({
                   )}
                 </div>
               ))}
-              <button
-                type="button"
-                className="flex w-full items-center justify-between px-4 py-3 text-left"
-              >
-                <span className="font-karla text-body text-content-secondary">Add a member</span>
-                <Plus size={20} className="shrink-0 text-content-secondary" />
-              </button>
             </div>
           </div>
           </>
@@ -275,7 +267,7 @@ export default function ActivityDetailScreen({
           <div className="px-4">
             {!item.bills || item.bills.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-20">
-                <Prohibit size={40} className="text-content-secondary" />
+                <Empty size={40} weight="fill" className="text-content-secondary" />
                 <span className="font-karla text-body text-content-secondary">
                   No bills added yet
                 </span>
@@ -341,17 +333,22 @@ export default function ActivityDetailScreen({
                 })}
               </div>
             )}
+          </div>
+          )}
+        </TouchScroll>
+
+        {activeTab === 1 && (
+          <div className="absolute inset-x-4 bottom-8">
             <button
               type="button"
               onClick={openAddBill}
-              className="mt-6 w-full rounded-full py-3.5 text-center font-karla text-body font-semibold"
+              className="w-full rounded-full py-3.5 text-center font-karla text-body font-semibold"
               style={{ background: "var(--color-brand)", color: "#fff" }}
             >
               {item.bills && item.bills.length > 0 ? "Add another bill" : "Add a bill"}
             </button>
           </div>
-          )}
-        </TouchScroll>
+        )}
       </div>
 
       {voteSheetOpen && item.pending && (
