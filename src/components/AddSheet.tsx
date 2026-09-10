@@ -1,19 +1,29 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Lightning,
   ListBullets,
-  X,
+  CaretLeft,
   Check,
   MapPin,
   Plus,
   CaretRight,
 } from "@phosphor-icons/react";
 import Toggle from "./Toggle";
+import GlassButton from "./GlassButton";
 
+// Sheet-level open/close (backdrop + sheet slide).
 const DURATION_MS = 300;
 const SHEET_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+
+// Menu <-> poll screen transition: fade the old content out, resize the
+// sheet to the new screen's height, then fade the new content in. Exits are
+// shorter than entrances (asymmetric timing); the resize keeps the sheet's
+// own established curve for cohesion with its open/close motion.
+const FADE_OUT_MS = 100;
+const RESIZE_MS = 220;
+const FADE_IN_MS = 160;
 
 function SheetOption({
   icon,
@@ -45,27 +55,6 @@ function SheetOption({
           </span>
         )}
       </div>
-    </button>
-  );
-}
-
-function HeaderIconButton({
-  icon,
-  ariaLabel,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  ariaLabel: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      onClick={onClick}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-card-light text-content-primary transition-transform duration-150 ease-out active:scale-[0.97]"
-    >
-      {icon}
     </button>
   );
 }
@@ -105,9 +94,13 @@ const INITIAL_TOGGLES: PollToggles = {
   showWhoVoted: false,
 };
 
+type Screen = "menu" | "poll";
+
 export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [closing, setClosing] = useState(false);
-  const [screen, setScreen] = useState<"menu" | "poll">("menu");
+  const [screen, setScreen] = useState<Screen>("menu");
+  const [contentVisible, setContentVisible] = useState(true);
+  const [fadeDuration, setFadeDuration] = useState(FADE_IN_MS);
   const [toggles, setToggles] = useState<PollToggles>(INITIAL_TOGGLES);
   const [options, setOptions] = useState<string[]>([""]);
   const [bodyHeight, setBodyHeight] = useState<number | null>(null);
@@ -116,16 +109,49 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const menuPanelRef = useRef<HTMLDivElement>(null);
   const pollPanelRef = useRef<HTMLDivElement>(null);
+  const pendingScreenRef = useRef<Screen | null>(null);
+  const timeoutsRef = useRef<number[]>([]);
 
-  // The sheet's two screens (menu, poll) are both always mounted, stacked via
-  // transform, and slid in/out like an iOS navigation push. Since they're
-  // absolutely positioned they don't contribute to layout height on their
-  // own, so the wrapper's height is measured off whichever screen is active
-  // and animated explicitly.
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  // The sheet's two screens (menu, poll) are both always mounted, stacked on
+  // top of each other. At rest, the wrapper's height tracks whichever one is
+  // active (they're absolutely positioned, so they don't contribute to
+  // layout height on their own). During a navigateTo() sequence this effect
+  // stands down — the sequence drives bodyHeight itself, staged behind the
+  // content fade.
   useLayoutEffect(() => {
+    if (pendingScreenRef.current) return;
     const activePanel = screen === "menu" ? menuPanelRef.current : pollPanelRef.current;
     if (activePanel) setBodyHeight(activePanel.scrollHeight);
   }, [screen, options.length]);
+
+  // Fade the current screen out, resize the sheet to the target screen's
+  // height while both are invisible, then fade the target screen in.
+  function navigateTo(target: Screen) {
+    if (target === screen || pendingScreenRef.current) return;
+    pendingScreenRef.current = target;
+    setFadeDuration(FADE_OUT_MS);
+    setContentVisible(false);
+
+    const t1 = window.setTimeout(() => {
+      const nextPanel = target === "menu" ? menuPanelRef.current : pollPanelRef.current;
+      if (nextPanel) setBodyHeight(nextPanel.scrollHeight);
+      setScreen(target);
+
+      const t2 = window.setTimeout(() => {
+        setFadeDuration(FADE_IN_MS);
+        setContentVisible(true);
+        pendingScreenRef.current = null;
+      }, RESIZE_MS);
+      timeoutsRef.current.push(t2);
+    }, FADE_OUT_MS);
+    timeoutsRef.current.push(t1);
+  }
 
   // Mirrors the entrance (sheet-enter/backdrop-enter's @starting-style slide
   // + fade) on the way out: play the reverse transform/opacity imperatively,
@@ -165,16 +191,16 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/30" />
 
         <div
-          className="relative overflow-hidden transition-[height] duration-300"
-          style={{ height: bodyHeight ?? undefined, transitionTimingFunction: SHEET_EASE }}
+          className="relative overflow-hidden transition-[height] ease-[cubic-bezier(0.32,0.72,0,1)]"
+          style={{ height: bodyHeight ?? undefined, transitionDuration: `${RESIZE_MS}ms` }}
         >
           <div
             ref={menuPanelRef}
             inert={screen !== "menu"}
-            className="absolute inset-x-0 top-0 transition-transform duration-300"
+            className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={{
-              transitionTimingFunction: SHEET_EASE,
-              transform: screen === "menu" ? "translateX(0%)" : "translateX(-100%)",
+              opacity: screen === "menu" && contentVisible ? 1 : 0,
+              transitionDuration: `${fadeDuration}ms`,
             }}
           >
             <p className="mb-4 text-center font-karla text-nav font-medium text-content-primary">
@@ -186,7 +212,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                 icon={<ListBullets size={20} />}
                 title="Poll"
                 subtitle="When you can't choose where to eat"
-                onClick={() => setScreen("poll")}
+                onClick={() => navigateTo("poll")}
               />
             </div>
           </div>
@@ -194,26 +220,22 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
           <div
             ref={pollPanelRef}
             inert={screen !== "poll"}
-            className="absolute inset-x-0 top-0 transition-transform duration-300"
+            className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={{
-              transitionTimingFunction: SHEET_EASE,
-              transform: screen === "poll" ? "translateX(0%)" : "translateX(100%)",
+              opacity: screen === "poll" && contentVisible ? 1 : 0,
+              transitionDuration: `${fadeDuration}ms`,
             }}
           >
             <div className="flex items-center justify-between px-4">
-              <HeaderIconButton
-                icon={<X size={20} weight="bold" />}
-                ariaLabel="Close"
-                onClick={() => setClosing(true)}
-              />
+              <GlassButton ariaLabel="Back" onClick={() => navigateTo("menu")}>
+                <CaretLeft size={22} />
+              </GlassButton>
               <span className="font-karla text-body font-medium text-content-primary">
                 Add poll
               </span>
-              <HeaderIconButton
-                icon={<Check size={20} weight="bold" />}
-                ariaLabel="Save poll"
-                onClick={() => setClosing(true)}
-              />
+              <GlassButton ariaLabel="Save poll" onClick={() => setClosing(true)}>
+                <Check size={22} />
+              </GlassButton>
             </div>
 
             <div className="flex flex-col gap-4 px-4 pt-4">
