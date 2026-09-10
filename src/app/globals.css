@@ -49,6 +49,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/*
+  Browsers set `cursor: pointer` directly on <a> elements (and similar
+  defaults on other interactive tags), which overrides an inherited
+  `cursor: none` from an ancestor. Force it back off everywhere inside the
+  simulated phone screen so the custom touch cursor is the only one visible.
+*/
+.simulator-cursor-none,
+.simulator-cursor-none * {
+  cursor: none !important;
+}
+
 /* Native iOS scroll views don't show a persistent scrollbar track. */
 .no-scrollbar {
   scrollbar-width: none;

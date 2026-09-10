@@ -22,7 +22,7 @@ export default function SimulatorTouch({
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full cursor-none"
+      className="simulator-cursor-none relative h-full w-full"
       onPointerEnter={updatePos}
       onPointerMove={updatePos}
       onPointerDown={(e) => {
@@ -38,17 +38,24 @@ export default function SimulatorTouch({
       {children}
       {pos && (
         <div
-          className="pointer-events-none absolute inset-0 z-50 rounded-full transition-transform"
+          className="pointer-events-none absolute left-0 top-0 z-50"
           style={{
             width: SIZE,
             height: SIZE,
-            background: isDown
-              ? "rgba(180,180,180,0.55)"
-              : "rgba(180,180,180,0.25)",
-            border: "1px solid rgba(255,255,255,0.6)",
-            transform: `translate(${pos.x - SIZE / 2}px, ${pos.y - SIZE / 2}px) scale(${isDown ? 0.9 : 1})`,
+            transform: `translate(${pos.x - SIZE / 2}px, ${pos.y - SIZE / 2}px)`,
           }}
-        />
+        >
+          <div
+            className="h-full w-full rounded-full transition-transform"
+            style={{
+              background: isDown
+                ? "rgba(180,180,180,0.55)"
+                : "rgba(180,180,180,0.25)",
+              border: "1px solid rgba(255,255,255,0.6)",
+              transform: `scale(${isDown ? 0.9 : 1})`,
+            }}
+          />
+        </div>
       )}
     </div>
   );
