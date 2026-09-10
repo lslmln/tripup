@@ -7,7 +7,7 @@ export default function TimelineSection({
   section: TimelineSectionType;
 }) {
   return (
-    <div className="px-4">
+    <div id={`section-${section.id}`} className="px-4">
       <h2 className="mb-3 font-karla text-header font-medium text-content-primary">
         {section.label}
       </h2>

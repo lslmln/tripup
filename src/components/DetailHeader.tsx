@@ -3,9 +3,11 @@ import Link from "next/link";
 import GlassButton from "./GlassButton";
 
 export default function DetailHeader({
+  tripId,
   title,
   avatar,
 }: {
+  tripId: string;
   title: string;
   avatar: string;
 }) {
@@ -19,12 +21,14 @@ export default function DetailHeader({
       <span className="font-karla text-nav font-medium text-content-primary">
         {title}
       </span>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={avatar}
-        alt=""
-        className="h-11 w-11 shrink-0 rounded-full border border-border-primary object-cover"
-      />
+      <Link href={`/trip/${tripId}/members`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={avatar}
+          alt=""
+          className="h-11 w-11 shrink-0 rounded-full border border-border-primary object-cover"
+        />
+      </Link>
     </div>
   );
 }
