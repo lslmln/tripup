@@ -17,8 +17,71 @@ export type TimelineSection = {
 
 // Matches the assignment's user scenario: "Today" is the last evening of the
 // Lisbon trip (afternoon sightseeing already wrapped, group heading to
-// dinner), and "Tomorrow" is departure morning — the transport back home.
+// dinner), "Tomorrow" is departure morning. Earlier days are included above
+// Today so the trip reads as a real multi-day itinerary — the screen scrolls
+// to Today on entry (see TripDetailScreen.tsx), with past days reachable by
+// scrolling up.
 export const mockTimeline: TimelineSection[] = [
+  {
+    id: "arrival",
+    label: "Mon, 5 Sep",
+    items: [
+      {
+        id: "a1",
+        type: "transport",
+        emoji: "✈️",
+        title: "Flight to Lisbon",
+        subtitle: "Home → Lisbon Airport",
+        time: "8-11am",
+      },
+      {
+        id: "a2",
+        type: "activity",
+        emoji: "🏠",
+        title: "Check-in",
+        subtitle: "Alfama Apartment",
+        time: "3-3:30pm",
+      },
+      {
+        id: "a3",
+        type: "meal",
+        emoji: "🍝",
+        title: "Welcome Dinner",
+        subtitle: "Alfama",
+        time: "8-9:30pm",
+      },
+    ],
+  },
+  {
+    id: "midtrip",
+    label: "Wed, 7 Sep",
+    items: [
+      {
+        id: "m1",
+        type: "meal",
+        emoji: "🥞",
+        title: "Brunch",
+        subtitle: "Time Out Market",
+        time: "11am-12pm",
+      },
+      {
+        id: "m2",
+        type: "activity",
+        emoji: "🎨",
+        title: "LX Factory Visit",
+        subtitle: "LX Factory",
+        time: "2-4pm",
+      },
+      {
+        id: "m3",
+        type: "meal",
+        emoji: "🍸",
+        title: "Rooftop Drinks",
+        subtitle: "Park Bar",
+        time: "7-9pm",
+      },
+    ],
+  },
   {
     id: "today",
     label: "Today",
