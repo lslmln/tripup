@@ -11,21 +11,26 @@ export default function Toggle({
   checked,
   onChange,
   ariaLabel,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   ariaLabel?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-disabled={disabled}
       aria-label={ariaLabel}
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        if (!disabled) onChange(!checked);
+      }}
       className={`relative shrink-0 rounded-full transition-colors duration-200 ease-out ${
         checked ? "bg-toggle-on" : "bg-toggle-off"
-      }`}
+      } ${disabled ? "opacity-50" : ""}`}
       style={{ width: TRACK_WIDTH, height: TRACK_HEIGHT }}
     >
       <span
