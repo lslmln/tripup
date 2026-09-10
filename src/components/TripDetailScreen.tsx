@@ -38,7 +38,7 @@ export default function TripDetailScreen({
       </div>
       <div className="relative min-h-0 flex-1">
         <TouchScroll className="no-scrollbar relative z-10 h-full overflow-y-auto">
-          <div className="flex flex-col gap-3 py-3">
+          <div className="flex flex-col gap-3 pt-3 pb-23">
             {timeline.map((section) => (
               <TimelineSection key={section.id} section={section} />
             ))}
