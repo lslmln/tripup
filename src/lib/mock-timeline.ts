@@ -7,7 +7,6 @@ export type TimelineItem = {
   title: string;
   subtitle: string;
   time: string;
-  pollInProgress?: boolean;
 };
 
 export type TimelineSection = {
@@ -168,9 +167,8 @@ export const mockTimeline: TimelineSection[] = [
         type: "meal",
         emoji: "🍷",
         title: "Dinner at A Cevicheria",
-        subtitle: "Poll in progress",
+        subtitle: "Alfama",
         time: "8-10pm",
-        pollInProgress: true,
       },
     ],
   },
