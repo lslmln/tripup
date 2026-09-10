@@ -1,6 +1,10 @@
 "use client";
 
+import { useLayoutEffect, useRef, useState } from "react";
 import { Lightning, ListBullets } from "@phosphor-icons/react";
+
+const DURATION_MS = 300;
+const SHEET_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
 function SheetOption({
   icon,
@@ -34,13 +38,41 @@ function SheetOption({
 }
 
 export default function AddSheet({ onClose }: { onClose: () => void }) {
+  const [closing, setClosing] = useState(false);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  // Mirrors the entrance (sheet-enter/backdrop-enter's @starting-style slide
+  // + fade) on the way out: play the reverse transform/opacity imperatively,
+  // then unmount via onClose only once it's finished, instead of vanishing
+  // the instant the backdrop is tapped.
+  useLayoutEffect(() => {
+    if (!closing) return;
+    const backdrop = backdropRef.current;
+    const sheet = sheetRef.current;
+    if (backdrop) {
+      backdrop.style.transition = "opacity 300ms ease-out";
+      backdrop.style.opacity = "0";
+    }
+    if (sheet) {
+      sheet.style.transition = `transform ${DURATION_MS}ms ${SHEET_EASE}`;
+      sheet.style.transform = "translateY(100%)";
+    }
+    const t = setTimeout(onClose, DURATION_MS);
+    return () => clearTimeout(t);
+  }, [closing, onClose]);
+
   return (
     <>
       <div
+        ref={backdropRef}
         className="backdrop-enter absolute inset-0 z-40 bg-black/60"
-        onClick={onClose}
+        onClick={() => setClosing(true)}
       />
-      <div className="sheet-enter absolute inset-x-0 bottom-0 z-50 rounded-t-[32px] bg-card pb-16 pt-3">
+      <div
+        ref={sheetRef}
+        className="sheet-enter absolute inset-x-0 bottom-0 z-50 rounded-t-[32px] bg-card pb-16 pt-3"
+      >
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/30" />
         <p className="mb-4 text-center font-karla text-nav font-medium text-content-primary">
           Add
