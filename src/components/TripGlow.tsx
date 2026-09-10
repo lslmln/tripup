@@ -25,7 +25,7 @@ export default function TripGlow() {
         style={{ backgroundImage: NOISE }}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background-detail/70 to-background-detail" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent from-0% via-background-detail via-35% to-background-detail to-55%" />
     </div>
   );
 }

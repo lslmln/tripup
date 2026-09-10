@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Karla } from "next/font/google";
 import "./globals.css";
 import GlassFilters from "@/components/GlassFilters";
 import PhoneFrame from "@/components/PhoneFrame";
+import MobileUnsupportedNotice from "@/components/MobileUnsupportedNotice";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <GlassFilters />
-        <main className="flex min-h-screen items-center justify-center bg-neutral-200 p-8">
+        <MobileUnsupportedNotice />
+        <main className="hidden min-h-screen items-center justify-center bg-neutral-200 p-8 md:flex">
           <PhoneFrame>{children}</PhoneFrame>
         </main>
       </body>
