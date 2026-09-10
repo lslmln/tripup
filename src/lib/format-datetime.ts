@@ -35,6 +35,12 @@ export function formatTimeRange(start: Date, end: Date) {
   return `${fromLabel}-${to.number}${to.period}`;
 }
 
+// Single-point-in-time version of the same compact convention — "8:24pm".
+export function formatClockTime(date: Date) {
+  const { number, period } = formatClockPart(date.getHours(), date.getMinutes());
+  return `${number}${period}`;
+}
+
 // When the user leaves the activity title blank, infer one from the time of
 // day — the whole point of this prototype's poll flow is picking where to
 // eat, so most of these land on a meal name.
