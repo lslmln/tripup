@@ -11,24 +11,20 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import GlassButton from "./GlassButton";
+import PollVoteSheet from "./PollVoteSheet";
 import SegmentedControl from "./SegmentedControl";
 import StatusBar from "./StatusBar";
 import TouchScroll from "./TouchScroll";
-import { getStoredTimeline } from "@/lib/timeline-store";
+import { getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
+import { formatCountdown, pickPollWinner, resolvePollItem } from "@/lib/poll";
+import { CURRENT_USER_ID } from "@/lib/mock-members";
 import type { Trip } from "@/lib/mock-trips";
 import type { Member } from "@/lib/mock-members";
 import type { TimelineItem, TimelineSection } from "@/lib/mock-timeline";
 
 const PENDING_COLOR = "#FFDA48";
 const DETAIL_TABS = ["Details", "Bill"];
-
-function formatCountdown(remainingMs: number) {
-  const totalSeconds = Math.max(0, Math.round(remainingMs / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")} min left`;
-}
 
 function findItem(sections: TimelineSection[], activityId: string): TimelineItem | null {
   for (const section of sections) {
@@ -49,19 +45,40 @@ export default function ActivityDetailScreen({
   fallbackTimeline: TimelineSection[];
   fallbackMembers: Member[];
 }) {
-  const [item] = useState<TimelineItem | null>(() =>
+  const [item, setItem] = useState<TimelineItem | null>(() =>
     findItem(getStoredTimeline(trip.id, fallbackTimeline), activityId),
   );
   const [tripMembers] = useState<Member[]>(() => getStoredMembers(trip.id, fallbackMembers));
-  const [answered, setAnswered] = useState(false);
+  const [voteSheetOpen, setVoteSheetOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  // Ticks the countdown once a second — only while a poll deadline exists.
+  // Writes the item back to the shared store (so it survives navigating
+  // away and matches what the trip timeline shows) as well as local state.
+  function persistItem(next: TimelineItem) {
+    setItem(next);
+    const current = getStoredTimeline(trip.id, fallbackTimeline);
+    const updated = current.map((section) => ({
+      ...section,
+      items: section.items.map((existing) => (existing.id === next.id ? next : existing)),
+    }));
+    setStoredTimeline(trip.id, updated);
+  }
+
+  // Ticks the countdown once a second while the poll is still open, and
+  // resolves it — winning option replaces the pending placeholder — the
+  // moment the deadline passes, even if the user never leaves this screen.
   useEffect(() => {
-    if (!item?.pollDeadline) return;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
+    if (!item || !item.pending || !item.pollDeadline) return;
+    const interval = setInterval(() => {
+      const nowTs = Date.now();
+      setNow(nowTs);
+      if (item.pollDeadline !== undefined && nowTs >= item.pollDeadline) {
+        persistItem(resolvePollItem(item));
+      }
+    }, 1000);
     return () => clearInterval(interval);
-  }, [item?.pollDeadline]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item]);
 
   if (!item) {
     return (
@@ -83,7 +100,17 @@ export default function ActivityDetailScreen({
 
   const attendees = tripMembers.filter((member) => item.attendeeIds?.includes(member.id));
   const remainingMs = item.pollDeadline ? item.pollDeadline - now : null;
-  const leadingOption = item.pollOptions?.[0] ?? null;
+  const myVote = item.pollVotes?.[CURRENT_USER_ID] ?? null;
+  const leadingOption =
+    myVote !== null && item.pollOptions ? pickPollWinner(item.pollOptions, item.pollVotes) : null;
+
+  function castVote(optionId: string) {
+    if (!item) return;
+    persistItem({
+      ...item,
+      pollVotes: { ...item.pollVotes, [CURRENT_USER_ID]: optionId },
+    });
+  }
 
   return (
     <div className="flex h-full w-full flex-col bg-background-detail">
@@ -136,24 +163,26 @@ export default function ActivityDetailScreen({
                     {remainingMs !== null ? formatCountdown(remainingMs) : "No time limit"}
                   </span>
                 </div>
-                {answered ? (
-                  leadingOption && (
-                    <div className="flex items-center gap-1">
-                      <div className="flex flex-col items-end">
-                        <span className="font-karla text-body font-medium text-content-primary">
-                          {leadingOption.name}
-                        </span>
-                        <span className="font-karla text-subtitle text-content-secondary">
-                          {leadingOption.subtitle}
-                        </span>
-                      </div>
-                      <CaretRight size={16} className="shrink-0 text-content-secondary" />
+                {leadingOption ? (
+                  <button
+                    type="button"
+                    onClick={() => setVoteSheetOpen(true)}
+                    className="flex items-center gap-1"
+                  >
+                    <div className="flex flex-col items-end">
+                      <span className="font-karla text-body font-medium text-content-primary">
+                        {leadingOption.name}
+                      </span>
+                      <span className="font-karla text-subtitle text-content-secondary">
+                        {leadingOption.subtitle}
+                      </span>
                     </div>
-                  )
+                    <CaretRight size={16} className="shrink-0 text-content-secondary" />
+                  </button>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setAnswered(true)}
+                    onClick={() => setVoteSheetOpen(true)}
                     className="font-karla text-body font-medium"
                     style={{ color: "var(--color-brand)" }}
                   >
@@ -208,6 +237,16 @@ export default function ActivityDetailScreen({
           </div>
         </TouchScroll>
       </div>
+
+      {voteSheetOpen && item.pending && (
+        <PollVoteSheet
+          item={item}
+          tripMembers={tripMembers}
+          now={now}
+          onVote={castVote}
+          onClose={() => setVoteSheetOpen(false)}
+        />
+      )}
     </div>
   );
 }

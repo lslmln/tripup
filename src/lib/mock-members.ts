@@ -5,6 +5,10 @@ export type Member = {
   avatar: string;
 };
 
+// This prototype has no real auth — Ari is the one and only "logged in"
+// user throughout the app (polls are created "as Ari", shown as "Me").
+export const CURRENT_USER_ID = "1";
+
 export const mockMembers: Member[] = [
   // Solo candid photo.
   { id: "1", name: "Ari", avatar: "https://i.pravatar.cc/150?img=16" },

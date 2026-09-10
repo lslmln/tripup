@@ -29,6 +29,7 @@ import {
   getMockNow,
   smartActivityTitle,
 } from "@/lib/format-datetime";
+import { seedPollVotes } from "@/lib/poll";
 import type { TimelineItem } from "@/lib/mock-timeline";
 
 // Sheet-level open/close (backdrop + sheet slide).
@@ -197,9 +198,9 @@ type PollToggles = {
 const INITIAL_TOGGLES: PollToggles = {
   limitDuration: false,
   multipleAnswers: false,
-  addingOptions: false,
-  revoting: false,
-  showWhoVoted: false,
+  addingOptions: true,
+  revoting: true,
+  showWhoVoted: true,
 };
 
 type Screen = "menu" | "poll" | "location" | "activity";
@@ -429,6 +430,7 @@ export default function AddSheet({
   // timeline as a pending placeholder (warning icon, no location) rather
   // than waiting for a full voting simulation this prototype doesn't have.
   function handleSavePoll() {
+    const pollOptions = locations.filter((loc): loc is Location => loc !== null);
     onActivityCreated?.({
       id: `poll-${Date.now()}`,
       type: "meal",
@@ -438,8 +440,13 @@ export default function AddSheet({
       subtitle: "Poll in progress",
       time: formatTimeRange(activityStart, activityEnd),
       pollQuestion,
-      pollOptions: locations.filter((loc): loc is Location => loc !== null),
+      pollOptions,
       pollDeadline: Date.now() + durationMinutes * 60 * 1000,
+      pollVotes: seedPollVotes(
+        attendeeIds,
+        pollOptions.map((option) => option.id),
+      ),
+      pollShowWhoVoted: toggles.showWhoVoted,
       attendeeIds,
     });
     setClosing(true);

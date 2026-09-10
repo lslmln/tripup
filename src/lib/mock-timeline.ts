@@ -17,6 +17,11 @@ export type TimelineItem = {
   pollOptions?: Location[];
   // Epoch ms — when the poll closes and (eventually) a winner is picked.
   pollDeadline?: number;
+  // memberId -> the option id they voted for.
+  pollVotes?: Record<string, string>;
+  // Mirrors the poll's own "Show who voted" toggle — governs whether the
+  // vote sheet names voters or just shows counts.
+  pollShowWhoVoted?: boolean;
   attendeeIds?: string[];
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
 import SegmentedControl from "./SegmentedControl";
@@ -12,6 +12,7 @@ import AddSheet from "./AddSheet";
 import type { Trip } from "@/lib/mock-trips";
 import type { TimelineItem, TimelineSection as TimelineSectionType } from "@/lib/mock-timeline";
 import { appendToSection, getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
+import { resolvePollItem } from "@/lib/poll";
 
 export default function TripDetailScreen({
   trip,
@@ -32,6 +33,33 @@ export default function TripDetailScreen({
       return next;
     });
   }
+
+  // Catches a poll's deadline passing while the user is sitting on the main
+  // timeline rather than the poll's own detail screen — the pending card
+  // flips back to a normal decided entry (winning option) within a second,
+  // with no need to open it first.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setTimeline((prev) => {
+        let changed = false;
+        const next = prev.map((section) => ({
+          ...section,
+          items: section.items.map((item) => {
+            if (item.pending && item.pollDeadline !== undefined && item.pollDeadline <= now) {
+              changed = true;
+              return resolvePollItem(item);
+            }
+            return item;
+          }),
+        }));
+        if (!changed) return prev;
+        setStoredTimeline(trip.id, next);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [trip.id]);
 
   // useLayoutEffect (not useEffect) so this runs before the browser's first
   // paint of this screen: the screen mounts off-screen (about to slide in
