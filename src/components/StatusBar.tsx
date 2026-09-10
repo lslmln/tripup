@@ -12,7 +12,7 @@ export default function StatusBar({
         light ? "text-white" : "text-black"
       }`}
     >
-      <span className="w-[100px] text-center">{time}</span>
+      <span className="w-[100px] text-center font-inter">{time}</span>
       <div className="flex w-[100px] items-center justify-center gap-1">
         <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
           <rect x="0" y="7" width="3" height="5" rx="0.5" fill={color} />

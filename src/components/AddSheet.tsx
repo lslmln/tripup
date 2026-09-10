@@ -22,7 +22,14 @@ import DateTimeFieldEditor from "./DateTimeFieldEditor";
 import type { Location } from "@/lib/mock-locations";
 import { mockMembers, type Member } from "@/lib/mock-members";
 import { getStoredMembers } from "@/lib/members-store";
-import { formatDateChip, formatTimeChip } from "@/lib/format-datetime";
+import {
+  formatDateChip,
+  formatTimeChip,
+  formatTimeRange,
+  getMockNow,
+  smartActivityTitle,
+} from "@/lib/format-datetime";
+import type { TimelineItem } from "@/lib/mock-timeline";
 
 // Sheet-level open/close (backdrop + sheet slide).
 const DURATION_MS = 300;
@@ -202,9 +209,11 @@ type DateField = "startDate" | "startTime" | "endDate" | "endTime";
 export default function AddSheet({
   tripId,
   onClose,
+  onActivityCreated,
 }: {
   tripId: string;
   onClose: () => void;
+  onActivityCreated?: (item: TimelineItem) => void;
 }) {
   const [closing, setClosing] = useState(false);
   const [screen, setScreen] = useState<Screen>("menu");
@@ -225,10 +234,12 @@ export default function AddSheet({
   const [attendeeIds, setAttendeeIds] = useState<string[]>(() =>
     tripMembers.map((member) => member.id),
   );
-  // Defaults to the moment the sheet was opened, ending an hour later.
-  const [activityStart, setActivityStart] = useState<Date>(() => new Date());
+  // Defaults to this prototype's fictional "now" (see getMockNow), ending an
+  // hour later — not the real device clock, which won't match the trip
+  // screen's own status bar.
+  const [activityStart, setActivityStart] = useState<Date>(() => getMockNow());
   const [activityEnd, setActivityEnd] = useState<Date>(
-    () => new Date(Date.now() + 60 * 60 * 1000),
+    () => new Date(getMockNow().getTime() + 60 * 60 * 1000),
   );
   // Which chip's editor (if any) is expanded inline below the Starts/Ends
   // card — tapping the active chip again collapses it.
@@ -413,6 +424,24 @@ export default function AddSheet({
   const filledLocationsCount = locations.filter((loc): loc is Location => loc !== null).length;
   const pollValid = pollQuestion.trim().length > 0 && filledLocationsCount >= 2;
 
+  // No one's voted yet, so the destination is unknown — the entry lands on
+  // today's timeline as a pending placeholder (warning icon, no location)
+  // rather than waiting for a full voting simulation this prototype doesn't have.
+  function handleSavePoll() {
+    if (createActivity) {
+      onActivityCreated?.({
+        id: `poll-${Date.now()}`,
+        type: "meal",
+        emoji: "",
+        pending: true,
+        title: activityTitle.trim() || smartActivityTitle(activityStart),
+        subtitle: "Poll in progress",
+        time: formatTimeRange(activityStart, activityEnd),
+      });
+    }
+    setClosing(true);
+  }
+
   return (
     <>
       <div
@@ -465,7 +494,7 @@ export default function AddSheet({
               </span>
               <GlassButton
                 ariaLabel="Save poll"
-                onClick={() => setClosing(true)}
+                onClick={handleSavePoll}
                 disabled={!pollValid}
                 style={
                   pollValid

@@ -39,6 +39,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-karla: var(--font-karla);
+  --font-inter: var(--font-inter);
 
   /* Type scale */
   --text-nav: 18px;

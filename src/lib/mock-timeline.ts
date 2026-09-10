@@ -7,6 +7,9 @@ export type TimelineItem = {
   title: string;
   subtitle: string;
   time: string;
+  // True for an activity created from a poll whose location hasn't been
+  // decided yet — shown with a warning icon in place of a place emoji.
+  pending?: boolean;
 };
 
 export type TimelineSection = {

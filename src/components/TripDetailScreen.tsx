@@ -10,16 +10,28 @@ import TripGlow from "./TripGlow";
 import GlassSearchBar from "./GlassSearchBar";
 import AddSheet from "./AddSheet";
 import type { Trip } from "@/lib/mock-trips";
-import type { TimelineSection as TimelineSectionType } from "@/lib/mock-timeline";
+import type { TimelineItem, TimelineSection as TimelineSectionType } from "@/lib/mock-timeline";
+import { appendToSection, getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 
 export default function TripDetailScreen({
   trip,
-  timeline,
+  timeline: initialTimeline,
 }: {
   trip: Trip;
   timeline: TimelineSectionType[];
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [timeline, setTimeline] = useState<TimelineSectionType[]>(() =>
+    getStoredTimeline(trip.id, initialTimeline),
+  );
+
+  function addTodayItem(item: TimelineItem) {
+    setTimeline((prev) => {
+      const next = appendToSection(prev, "today", item);
+      setStoredTimeline(trip.id, next);
+      return next;
+    });
+  }
 
   // useLayoutEffect (not useEffect) so this runs before the browser's first
   // paint of this screen: the screen mounts off-screen (about to slide in
@@ -68,7 +80,13 @@ export default function TripDetailScreen({
         />
       </div>
       <GlassSearchBar onAddClick={() => setSheetOpen(true)} />
-      {sheetOpen && <AddSheet tripId={trip.id} onClose={() => setSheetOpen(false)} />}
+      {sheetOpen && (
+        <AddSheet
+          tripId={trip.id}
+          onClose={() => setSheetOpen(false)}
+          onActivityCreated={addTodayItem}
+        />
+      )}
     </div>
   );
 }
