@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
 import SegmentedControl from "./SegmentedControl";
 import TimelineSection from "./TimelineSection";
 import TouchScroll from "./TouchScroll";
 import TripGlow from "./TripGlow";
+import GlassSearchBar from "./GlassSearchBar";
+import AddSheet from "./AddSheet";
 import type { Trip } from "@/lib/mock-trips";
 import type { TimelineSection as TimelineSectionType } from "@/lib/mock-timeline";
 
@@ -17,6 +19,8 @@ export default function TripDetailScreen({
   trip: Trip;
   timeline: TimelineSectionType[];
 }) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   useEffect(() => {
     // Land on Today by default; earlier days are reachable by scrolling up.
     document.getElementById("section-today")?.scrollIntoView({ block: "start" });
@@ -34,17 +38,23 @@ export default function TripDetailScreen({
       </div>
       <div className="relative min-h-0 flex-1">
         <TouchScroll className="no-scrollbar relative z-10 h-full overflow-y-auto">
-          <div className="flex flex-col gap-3 py-3">
+          <div className="flex flex-col gap-3 pt-3 pb-23">
             {timeline.map((section) => (
               <TimelineSection key={section.id} section={section} />
             ))}
           </div>
         </TouchScroll>
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-20 h-10 bg-gradient-to-b from-background-detail to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 z-20 h-20"
+          style={{
+            background:
+              "linear-gradient(to bottom, var(--color-background-detail) 0%, color-mix(in srgb, var(--color-background-detail) 70%, transparent) 40%, color-mix(in srgb, var(--color-background-detail) 25%, transparent) 75%, transparent 100%)",
+          }}
           aria-hidden
         />
       </div>
+      <GlassSearchBar onAddClick={() => setSheetOpen(true)} />
+      {sheetOpen && <AddSheet onClose={() => setSheetOpen(false)} />}
     </div>
   );
 }
