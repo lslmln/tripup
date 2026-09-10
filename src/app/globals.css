@@ -20,6 +20,8 @@
   /* Trip-detail hero glow, sampled from the Lisbon photo (river/sky blue + terracotta rooftops) */
   --color-glow-blue: #2f6fa8;
   --color-glow-warm: #c9784a;
+  /* Brand accent — pulled from the home screen's GradientGlow (violet/fuchsia blob family) */
+  --color-brand: #a855f7;
   /* Near-black with a ~10% tinge of the glow blue — deliberately more visible than background-primary's 5% pink */
   --color-background-detail: #050b11;
 

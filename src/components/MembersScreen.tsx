@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CaretLeft, DotsThreeOutline } from "@phosphor-icons/react/dist/ssr";
+import AddMemberSheet from "./AddMemberSheet";
 import GlassButton from "./GlassButton";
 import GlassSearchBar from "./GlassSearchBar";
 import StatusBar from "./StatusBar";
@@ -15,6 +17,8 @@ export default function MembersScreen({
   trip: Trip;
   members: Member[];
 }) {
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+
   return (
     <div className="flex h-full w-full flex-col bg-background-detail">
       <div className="shrink-0">
@@ -82,7 +86,11 @@ export default function MembersScreen({
         />
       </div>
 
-      <GlassSearchBar placeholder="Search members" onAddClick={() => {}} />
+      <GlassSearchBar
+        placeholder="Search members"
+        onAddClick={() => setAddMemberOpen(true)}
+      />
+      {addMemberOpen && <AddMemberSheet onClose={() => setAddMemberOpen(false)} />}
     </div>
   );
 }
