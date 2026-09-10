@@ -48,7 +48,7 @@ export default function TripDetailScreen({
           className="pointer-events-none absolute inset-x-0 top-0 z-20 h-3"
           style={{
             background:
-              "linear-gradient(to bottom, var(--color-background-detail) 0%, transparent 100%)",
+              "linear-gradient(to bottom, color-mix(in srgb, var(--color-background-detail) 25%, transparent) 0%, transparent 100%)",
           }}
           aria-hidden
         />
