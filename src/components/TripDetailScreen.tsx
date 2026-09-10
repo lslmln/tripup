@@ -45,7 +45,11 @@ export default function TripDetailScreen({
           </div>
         </TouchScroll>
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-20 h-10 bg-gradient-to-b from-background-detail to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 z-20 h-20"
+          style={{
+            background:
+              "linear-gradient(to bottom, var(--color-background-detail) 0%, color-mix(in srgb, var(--color-background-detail) 70%, transparent) 40%, color-mix(in srgb, var(--color-background-detail) 25%, transparent) 75%, transparent 100%)",
+          }}
           aria-hidden
         />
       </div>
