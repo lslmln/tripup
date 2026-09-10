@@ -7,8 +7,12 @@ import { NAV_DURATION, NAV_EASE } from "@/lib/motion";
 const DURATION_MS = NAV_DURATION * 1000;
 const EASE = `cubic-bezier(${NAV_EASE.join(",")})`;
 
-function isDetail(pathname: string) {
-  return pathname.startsWith("/trip/");
+// Route nesting depth (e.g. "/" = 0, "/trip/1" = 2, "/trip/1/members" = 3).
+// Comparing depth (rather than a two-state "is this a detail screen?" flag)
+// is what lets a hop between two nested routes at different depths — like
+// trip detail -> members — get a correct forward/back direction too.
+function depth(pathname: string) {
+  return pathname.split("/").filter(Boolean).length;
 }
 
 // Snapshots the outgoing screen as raw HTML, then slides that frozen
@@ -38,18 +42,17 @@ export default function PageTransition({
 
   useLayoutEffect(() => {
     if (pathname !== lastPathnameRef.current) {
-      const wasDetail = isDetail(lastPathnameRef.current);
-      const nowDetail = isDetail(pathname);
+      const forward = depth(pathname) >= depth(lastPathnameRef.current);
       const oldHtml = lastHtmlRef.current;
       lastPathnameRef.current = pathname;
 
       if (oldHtml) {
-        setSnapshot({ html: oldHtml, exitTo: !wasDetail && nowDetail ? -100 : 100 });
+        setSnapshot({ html: oldHtml, exitTo: forward ? -100 : 100 });
       }
 
       const enterEl = enterRef.current;
       if (enterEl) {
-        const enterFrom = nowDetail ? 100 : -100;
+        const enterFrom = forward ? 100 : -100;
         enterEl.style.transition = "none";
         enterEl.style.transform = `translateX(${enterFrom}%)`;
         void enterEl.offsetHeight;
