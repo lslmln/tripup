@@ -68,7 +68,7 @@ export default function TripDetailScreen({
         />
       </div>
       <GlassSearchBar onAddClick={() => setSheetOpen(true)} />
-      {sheetOpen && <AddSheet onClose={() => setSheetOpen(false)} />}
+      {sheetOpen && <AddSheet tripId={trip.id} onClose={() => setSheetOpen(false)} />}
     </div>
   );
 }

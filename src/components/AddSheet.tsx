@@ -9,6 +9,7 @@ import {
   Check,
   CheckSquare,
   MapPin,
+  Smiley,
   Square,
   XCircle,
   Plus,
@@ -19,7 +20,8 @@ import TouchScroll from "./TouchScroll";
 import LocationSearchPanel from "./LocationSearchPanel";
 import DurationPickerSheet from "./DurationPickerSheet";
 import type { Location } from "@/lib/mock-locations";
-import { mockCandidates } from "@/lib/mock-candidates";
+import { mockMembers, type Member } from "@/lib/mock-members";
+import { getStoredMembers } from "@/lib/members-store";
 
 // Sheet-level open/close (backdrop + sheet slide).
 const DURATION_MS = 300;
@@ -169,7 +171,13 @@ const INITIAL_TOGGLES: PollToggles = {
 
 type Screen = "menu" | "poll" | "location" | "activity";
 
-export default function AddSheet({ onClose }: { onClose: () => void }) {
+export default function AddSheet({
+  tripId,
+  onClose,
+}: {
+  tripId: string;
+  onClose: () => void;
+}) {
   const [closing, setClosing] = useState(false);
   const [screen, setScreen] = useState<Screen>("menu");
   const [contentVisible, setContentVisible] = useState(true);
@@ -182,8 +190,11 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [createActivity, setCreateActivity] = useState(true);
   const [activityTitle, setActivityTitle] = useState("");
+  // Only trip members are eligible attendees — the same roster the trip's
+  // Members screen shows, not the wider candidate pool used to invite people.
+  const [tripMembers] = useState<Member[]>(() => getStoredMembers(tripId, mockMembers));
   const [attendeeIds, setAttendeeIds] = useState<string[]>(() =>
-    mockCandidates.map((candidate) => candidate.id),
+    tripMembers.map((member) => member.id),
   );
   const [bodyHeight, setBodyHeight] = useState<number | null>(null);
 
@@ -522,13 +533,22 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
 
               {createActivity && (
                 <>
-                  <input
-                    type="text"
-                    value={activityTitle}
-                    onChange={(e) => setActivityTitle(e.target.value)}
-                    placeholder="Title"
-                    className="w-full rounded-card bg-card-light px-4 py-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={activityTitle}
+                      onChange={(e) => setActivityTitle(e.target.value)}
+                      placeholder="Title"
+                      className="w-full rounded-card bg-card-light py-4 pr-12 pl-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Add emoji"
+                      className="absolute inset-y-0 right-4 flex items-center text-content-secondary"
+                    >
+                      <Smiley size={20} />
+                    </button>
+                  </div>
 
                   <div className="overflow-hidden rounded-card bg-card-light">
                     <div className="flex items-center justify-between px-4 py-3">
@@ -560,13 +580,13 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                   </div>
 
                   <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
-                    {mockCandidates.map((candidate) => {
-                      const checked = attendeeIds.includes(candidate.id);
+                    {tripMembers.map((member) => {
+                      const checked = attendeeIds.includes(member.id);
                       return (
                         <button
-                          key={candidate.id}
+                          key={member.id}
                           type="button"
-                          onClick={() => toggleAttendee(candidate.id)}
+                          onClick={() => toggleAttendee(member.id)}
                           className="flex w-full items-center gap-3 px-4 py-3 text-left focus:outline-none"
                         >
                           {checked ? (
@@ -581,12 +601,12 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                           )}
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={candidate.avatar}
+                            src={member.avatar}
                             alt=""
                             className="h-11 w-11 shrink-0 rounded-full object-cover"
                           />
                           <span className="font-karla text-body font-medium text-content-primary">
-                            {candidate.name}
+                            {member.name}
                           </span>
                         </button>
                       );
