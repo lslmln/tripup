@@ -5,6 +5,12 @@ export type Candidate = {
 };
 
 export const mockCandidates: Candidate[] = [
+  {
+    id: "c13",
+    name: "Ren",
+    avatar:
+      "https://images.unsplash.com/photo-1709653383462-685f84afe66a?w=300&h=300&fit=crop&crop=faces&auto=format&q=80",
+  },
   { id: "c1", name: "Priya", avatar: "https://i.pravatar.cc/150?img=1" },
   { id: "c2", name: "Jordan", avatar: "https://i.pravatar.cc/150?img=3" },
   { id: "c3", name: "Mika", avatar: "https://i.pravatar.cc/150?img=7" },

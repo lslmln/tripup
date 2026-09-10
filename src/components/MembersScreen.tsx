@@ -9,15 +9,27 @@ import GlassSearchBar from "./GlassSearchBar";
 import StatusBar from "./StatusBar";
 import type { Trip } from "@/lib/mock-trips";
 import type { Member } from "@/lib/mock-members";
+import type { Candidate } from "@/lib/mock-candidates";
 
 export default function MembersScreen({
   trip,
-  members,
+  members: initialMembers,
 }: {
   trip: Trip;
   members: Member[];
 }) {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [members, setMembers] = useState<Member[]>(initialMembers);
+
+  const addMembers = (candidates: Candidate[]) => {
+    setMembers((prev) => {
+      const existingIds = new Set(prev.map((member) => member.id));
+      const newMembers = candidates
+        .filter((candidate) => !existingIds.has(candidate.id))
+        .map(({ id, name, avatar }) => ({ id, name, avatar }));
+      return [...prev, ...newMembers];
+    });
+  };
 
   return (
     <div className="flex h-full w-full flex-col bg-background-detail">
@@ -90,7 +102,12 @@ export default function MembersScreen({
         placeholder="Search members"
         onAddClick={() => setAddMemberOpen(true)}
       />
-      {addMemberOpen && <AddMemberSheet onClose={() => setAddMemberOpen(false)} />}
+      {addMemberOpen && (
+        <AddMemberSheet
+          onClose={() => setAddMemberOpen(false)}
+          onConfirm={addMembers}
+        />
+      )}
     </div>
   );
 }
