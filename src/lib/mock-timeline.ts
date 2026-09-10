@@ -162,14 +162,6 @@ export const mockTimeline: TimelineSection[] = [
         subtitle: "Alfama",
         time: "4:30-5pm",
       },
-      {
-        id: "3",
-        type: "meal",
-        emoji: "🍷",
-        title: "Dinner at A Cevicheria",
-        subtitle: "Alfama",
-        time: "8-10pm",
-      },
     ],
   },
   {
