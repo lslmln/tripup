@@ -1,25 +1,33 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Empty } from "@phosphor-icons/react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
 import SegmentedControl from "./SegmentedControl";
 import TimelineSection from "./TimelineSection";
 import TouchScroll from "./TouchScroll";
+import TransactionNotification from "./TransactionNotification";
 import TripGlow from "./TripGlow";
 import GlassSearchBar from "./GlassSearchBar";
 import AddSheet from "./AddSheet";
 import type { Trip } from "@/lib/mock-trips";
 import type { Member } from "@/lib/mock-members";
 import type { TimelineItem, TimelineSection as TimelineSectionType } from "@/lib/mock-timeline";
+import type { Transaction } from "@/lib/transactions";
 import { appendToSection, getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
-import { getStoredTransactions } from "@/lib/transactions-store";
+import { addStoredTransaction, getStoredTransactions } from "@/lib/transactions-store";
 import { resolvePollItem } from "@/lib/poll";
 import { computeOwed } from "@/lib/balance";
 import { formatMoney } from "@/lib/bills";
 import { formatClockTime } from "@/lib/format-datetime";
+
+// How long after a balance appears the simulated incoming payment lands —
+// there's no real multi-user backend here, so this stands in for another
+// member settling up on their own end and the notification arriving.
+const SIMULATED_PAYMENT_DELAY_MS = 12000;
+const NOTIFICATION_AUTO_DISMISS_MS = 6000;
 
 export default function TripDetailScreen({
   trip,
@@ -36,9 +44,13 @@ export default function TripDetailScreen({
     getStoredTimeline(trip.id, initialTimeline),
   );
   const [tripMembers] = useState<Member[]>(() => getStoredMembers(trip.id, fallbackMembers));
-  // No settlement mechanism writes to this yet (no multi-user backend or
-  // notification system to trigger one) — see the empty state below.
-  const [transactions] = useState(() => getStoredTransactions(trip.id));
+  const [transactions, setTransactions] = useState<Transaction[]>(() =>
+    getStoredTransactions(trip.id),
+  );
+  const [notification, setNotification] = useState<{ memberName: string; amount: number } | null>(
+    null,
+  );
+  const hasSimulatedPayment = useRef(false);
 
   function addTodayItem(item: TimelineItem) {
     setTimeline((prev) => {
@@ -95,9 +107,46 @@ export default function TripDetailScreen({
   const owed = computeOwed(timeline, transactions);
   const totalOwed = owed.reduce((sum, entry) => sum + entry.amount, 0);
 
+  // Real payments come from other trip members' own devices, not anything
+  // Ari does here — this simulates that one-time, settling the first
+  // debtor in full, so the notification and Balance/Transactions flow are
+  // actually demonstrable without a real multi-user backend.
+  useEffect(() => {
+    if (owed.length === 0 || hasSimulatedPayment.current) return;
+    hasSimulatedPayment.current = true;
+    const [debtor] = owed;
+    const member = memberById(debtor.memberId);
+    const timeout = setTimeout(() => {
+      const transaction: Transaction = {
+        id: `txn-${Date.now()}`,
+        memberId: debtor.memberId,
+        amount: debtor.amount,
+        at: Date.now(),
+      };
+      setTransactions(addStoredTransaction(trip.id, transaction));
+      setNotification({ memberName: member?.name ?? "Someone", amount: debtor.amount });
+    }, SIMULATED_PAYMENT_DELAY_MS);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [owed.length]);
+
+  // Notification auto-dismisses like a real iOS banner if you don't tap it.
+  useEffect(() => {
+    if (!notification) return;
+    const timeout = setTimeout(() => setNotification(null), NOTIFICATION_AUTO_DISMISS_MS);
+    return () => clearTimeout(timeout);
+  }, [notification]);
+
   return (
-    <div className="flex h-full w-full flex-col bg-background-detail">
+    <div className="relative flex h-full w-full flex-col bg-background-detail">
       <TripGlow />
+      {notification && (
+        <TransactionNotification
+          memberName={notification.memberName}
+          amount={notification.amount}
+          onDismiss={() => setNotification(null)}
+        />
+      )}
       <div className="relative z-10 shrink-0">
         <StatusBar light time="6:45" />
         <DetailHeader tripId={trip.id} title={trip.name} avatar={trip.image} />
