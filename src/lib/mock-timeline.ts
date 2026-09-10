@@ -53,6 +53,36 @@ export const mockTimeline: TimelineSection[] = [
     ],
   },
   {
+    id: "day2",
+    label: "Tue, 6 Sep",
+    items: [
+      {
+        id: "d2-1",
+        type: "activity",
+        emoji: "🚋",
+        title: "Tram 28 Tour",
+        subtitle: "Alfama",
+        time: "9-11am",
+      },
+      {
+        id: "d2-2",
+        type: "meal",
+        emoji: "🥐",
+        title: "Pastéis de Belém",
+        subtitle: "Belém",
+        time: "12-1pm",
+      },
+      {
+        id: "d2-3",
+        type: "activity",
+        emoji: "🎶",
+        title: "Fado Night",
+        subtitle: "Alfama",
+        time: "8-10pm",
+      },
+    ],
+  },
+  {
     id: "midtrip",
     label: "Wed, 7 Sep",
     items: [
@@ -83,8 +113,38 @@ export const mockTimeline: TimelineSection[] = [
     ],
   },
   {
+    id: "day4",
+    label: "Yesterday, 8 Sep",
+    items: [
+      {
+        id: "d4-1",
+        type: "transport",
+        emoji: "🚆",
+        title: "Train to Sintra",
+        subtitle: "Rossio → Sintra",
+        time: "9-9:45am",
+      },
+      {
+        id: "d4-2",
+        type: "activity",
+        emoji: "🏰",
+        title: "Pena Palace Visit",
+        subtitle: "Sintra",
+        time: "10am-1pm",
+      },
+      {
+        id: "d4-3",
+        type: "meal",
+        emoji: "🍷",
+        title: "Dinner in Sintra",
+        subtitle: "Sintra",
+        time: "7-9pm",
+      },
+    ],
+  },
+  {
     id: "today",
-    label: "Today",
+    label: "Today, 9 Sep",
     items: [
       {
         id: "1",
@@ -114,7 +174,7 @@ export const mockTimeline: TimelineSection[] = [
   },
   {
     id: "tomorrow",
-    label: "Tomorrow",
+    label: "Tomorrow, 10 Sep",
     items: [
       {
         id: "4",
