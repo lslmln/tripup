@@ -20,11 +20,20 @@ export default function GlassButton({
       aria-disabled={disabled}
       onClick={disabled ? undefined : onClick}
       className={`flex h-11 w-11 items-center justify-center rounded-full text-content-primary transition-transform duration-150 ease-out focus:outline-none ${
-        disabled ? "opacity-40" : "active:scale-[0.97] hover:scale-[1.04]"
+        disabled ? "" : "active:scale-[0.97] hover:scale-[1.04]"
       }`}
       style={{ ...glassStyle, ...style }}
     >
-      {children}
+      {/* Matches iOS: the circle itself always reads as a normal button —
+          only the icon fades toward invisible while disabled, then snaps to
+          full opacity the moment the circle also fills with its enabled
+          color (set via the `style` prop at the call site). */}
+      <span
+        className="flex items-center justify-center transition-opacity duration-150 ease-out"
+        style={{ opacity: disabled ? 0.3 : 1 }}
+      >
+        {children}
+      </span>
     </button>
   );
 }
