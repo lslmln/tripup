@@ -16,13 +16,6 @@ export const mockMembers: Member[] = [
     avatar:
       "https://images.unsplash.com/photo-1758272133786-ee98adcc6837?w=300&h=300&fit=crop&crop=faces&auto=format&q=80",
   },
-  // With her dog.
-  {
-    id: "3",
-    name: "Ren",
-    avatar:
-      "https://images.unsplash.com/photo-1709653383462-685f84afe66a?w=300&h=300&fit=crop&crop=faces&auto=format&q=80",
-  },
   // With her partner, black and white.
   {
     id: "4",

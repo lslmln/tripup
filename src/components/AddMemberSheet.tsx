@@ -5,12 +5,18 @@ import { Check, CheckSquare, MagnifyingGlass, Square, X } from "@phosphor-icons/
 import GlassButton from "./GlassButton";
 import StatusBar from "./StatusBar";
 import { glassStyle } from "./glass";
-import { mockCandidates } from "@/lib/mock-candidates";
+import { mockCandidates, type Candidate } from "@/lib/mock-candidates";
 
 const DURATION_MS = 300;
 const SHEET_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
-export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
+export default function AddMemberSheet({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void;
+  onConfirm: (candidates: Candidate[]) => void;
+}) {
   const [closing, setClosing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -43,6 +49,11 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
 
   const selected = mockCandidates.filter((candidate) => selectedIds.includes(candidate.id));
 
+  const handleDone = () => {
+    onConfirm(selected);
+    setClosing(true);
+  };
+
   return (
     <>
       <div
@@ -50,13 +61,13 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
         className="backdrop-enter absolute inset-0 z-40 bg-black/60"
         onClick={() => setClosing(true)}
       />
-      {/* Status bar stays crisp above the dimmed backdrop, in the 44px strip the sheet leaves uncovered. */}
+      {/* Status bar stays crisp above the dimmed backdrop, in the strip the sheet leaves uncovered. */}
       <div className="absolute inset-x-0 top-0 z-50">
         <StatusBar light />
       </div>
       <div
         ref={sheetRef}
-        className="sheet-enter absolute inset-x-0 top-11 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[32px] bg-card"
+        className="sheet-enter absolute inset-x-0 top-17 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[32px] bg-card"
       >
         <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-white/30" />
 
@@ -67,13 +78,21 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
           <p className="font-karla text-nav font-medium text-content-primary">
             Add member
           </p>
-          <GlassButton ariaLabel="Done" onClick={() => setClosing(true)}>
+          <GlassButton
+            ariaLabel="Done"
+            onClick={handleDone}
+            style={
+              selected.length > 0
+                ? { background: "var(--color-brand)", borderColor: "var(--color-brand)" }
+                : undefined
+            }
+          >
             <Check size={20} weight="bold" />
           </GlassButton>
         </div>
 
         <div className="relative min-h-0 flex-1">
-          <div className="no-scrollbar h-full overflow-y-auto px-4 pt-3 pb-23">
+          <div className="no-scrollbar h-full overflow-y-auto pt-3 pb-23">
             <div className="divide-y divide-border-primary">
               {mockCandidates.map((candidate) => {
                 const checked = selectedIds.includes(candidate.id);
@@ -82,7 +101,7 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
                     key={candidate.id}
                     type="button"
                     onClick={() => toggle(candidate.id)}
-                    className="flex w-full items-center gap-3 py-3 text-left"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
                   >
                     {checked ? (
                       <CheckSquare
@@ -126,7 +145,7 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
           {selected.map((candidate) => (
             <span
               key={candidate.id}
-              className="flex items-center gap-1.5 rounded-full bg-card py-1 pr-3 pl-1"
+              className="flex items-center gap-1.5 rounded-full bg-card py-1 pr-1 pl-1"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -137,6 +156,14 @@ export default function AddMemberSheet({ onClose }: { onClose: () => void }) {
               <span className="font-karla text-subtitle text-content-primary">
                 {candidate.name}
               </span>
+              <button
+                type="button"
+                aria-label={`Remove ${candidate.name}`}
+                onClick={() => toggle(candidate.id)}
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-content-secondary"
+              >
+                <X size={12} weight="bold" />
+              </button>
             </span>
           ))}
           {selected.length === 0 && (
