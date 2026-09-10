@@ -214,6 +214,26 @@ export default function AddSheet({
     return locationPanelRef;
   }
 
+  // All four screens stay mounted at once (so navigateTo can measure the
+  // next screen's height before it fades in), stacked via absolute
+  // positioning inside the same relative, overflow-y-auto TouchScroll. Left
+  // at their natural height, every inactive screen's content still counts
+  // toward that ancestor's scrollable area — even fully transparent, they'd
+  // let a drag scroll past the visible screen into blank space sized by
+  // whichever screen happens to be tallest. Collapsing inactive screens to
+  // height: 0 (with overflow: hidden) removes them from that scrollable
+  // area while leaving their own scrollHeight - read by ref - unaffected,
+  // since scrollHeight always reports the untruncated content height.
+  function screenStyle(target: Screen): React.CSSProperties {
+    const active = screen === target;
+    return {
+      opacity: active && contentVisible ? 1 : 0,
+      transitionDuration: `${fadeDuration}ms`,
+      height: active ? "auto" : 0,
+      overflow: "hidden",
+    };
+  }
+
   // Sheets cap at (phone screen height - status bar clearance); beyond that
   // the content scrolls instead of the sheet growing past the screen.
   function clampToMaxHeight(natural: number) {
@@ -367,10 +387,7 @@ export default function AddSheet({
             ref={menuPanelRef}
             inert={screen !== "menu"}
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
-            style={{
-              opacity: screen === "menu" && contentVisible ? 1 : 0,
-              transitionDuration: `${fadeDuration}ms`,
-            }}
+            style={screenStyle("menu")}
           >
             <p className="mb-4 text-center font-karla text-nav font-medium text-content-primary">
               Add
@@ -390,10 +407,7 @@ export default function AddSheet({
             ref={pollPanelRef}
             inert={screen !== "poll"}
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
-            style={{
-              opacity: screen === "poll" && contentVisible ? 1 : 0,
-              transitionDuration: `${fadeDuration}ms`,
-            }}
+            style={screenStyle("poll")}
           >
             <div className="flex items-center justify-between px-4">
               <GlassButton ariaLabel="Back" onClick={() => navigateTo("menu")}>
@@ -501,10 +515,7 @@ export default function AddSheet({
             ref={activityPanelRef}
             inert={screen !== "activity"}
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
-            style={{
-              opacity: screen === "activity" && contentVisible ? 1 : 0,
-              transitionDuration: `${fadeDuration}ms`,
-            }}
+            style={screenStyle("activity")}
           >
             <div className="flex items-center justify-between px-4">
               <GlassButton ariaLabel="Back" onClick={() => navigateTo("poll")}>
@@ -611,10 +622,7 @@ export default function AddSheet({
             ref={locationPanelRef}
             inert={screen !== "location"}
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
-            style={{
-              opacity: screen === "location" && contentVisible ? 1 : 0,
-              transitionDuration: `${fadeDuration}ms`,
-            }}
+            style={screenStyle("location")}
           >
             <LocationSearchPanel
               query={locationQuery}
