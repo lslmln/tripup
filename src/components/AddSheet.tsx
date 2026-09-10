@@ -18,9 +18,11 @@ import GlassButton from "./GlassButton";
 import TouchScroll from "./TouchScroll";
 import LocationSearchPanel from "./LocationSearchPanel";
 import DurationPickerSheet from "./DurationPickerSheet";
+import DateTimePickerSheet, { type DateField } from "./DateTimePickerSheet";
 import type { Location } from "@/lib/mock-locations";
 import { mockMembers, type Member } from "@/lib/mock-members";
 import { getStoredMembers } from "@/lib/members-store";
+import { formatDateChip, formatTimeChip } from "@/lib/format-datetime";
 
 // Sheet-level open/close (backdrop + sheet slide).
 const DURATION_MS = 300;
@@ -195,6 +197,13 @@ export default function AddSheet({
   const [attendeeIds, setAttendeeIds] = useState<string[]>(() =>
     tripMembers.map((member) => member.id),
   );
+  // Defaults to the moment the sheet was opened, ending an hour later.
+  const [activityAllDay, setActivityAllDay] = useState(false);
+  const [activityStart, setActivityStart] = useState<Date>(() => new Date());
+  const [activityEnd, setActivityEnd] = useState<Date>(
+    () => new Date(Date.now() + 60 * 60 * 1000),
+  );
+  const [dateTimePickerField, setDateTimePickerField] = useState<DateField | null>(null);
   const [bodyHeight, setBodyHeight] = useState<number | null>(null);
 
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -263,7 +272,7 @@ export default function AddSheet({
     if (pendingScreenRef.current) return;
     const activePanel = panelRefFor(screen).current;
     if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
-  }, [screen, locationsSignature, toggles.limitDuration, createActivity]);
+  }, [screen, locationsSignature, toggles.limitDuration, createActivity, activityAllDay]);
 
   // Focus the location search input once its screen has finished fading in.
   useEffect(() => {
@@ -555,12 +564,22 @@ export default function AddSheet({
                         Starts
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
-                          June 2024
-                        </span>
-                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
-                          9:41 AM
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setDateTimePickerField("startDate")}
+                          className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
+                        >
+                          {formatDateChip(activityStart)}
+                        </button>
+                        {!activityAllDay && (
+                          <button
+                            type="button"
+                            onClick={() => setDateTimePickerField("startTime")}
+                            className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
+                          >
+                            {formatTimeChip(activityStart)}
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between border-t border-border-primary px-4 py-3">
@@ -568,12 +587,22 @@ export default function AddSheet({
                         Ends
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
-                          June 2024
-                        </span>
-                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
-                          9:41 AM
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setDateTimePickerField("endDate")}
+                          className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
+                        >
+                          {formatDateChip(activityEnd)}
+                        </button>
+                        {!activityAllDay && (
+                          <button
+                            type="button"
+                            onClick={() => setDateTimePickerField("endTime")}
+                            className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
+                          >
+                            {formatTimeChip(activityEnd)}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -639,6 +668,19 @@ export default function AddSheet({
           minutes={durationMinutes}
           onChange={setDurationMinutes}
           onClose={() => setDurationPickerOpen(false)}
+        />
+      )}
+
+      {dateTimePickerField && (
+        <DateTimePickerSheet
+          start={activityStart}
+          end={activityEnd}
+          allDay={activityAllDay}
+          onAllDayChange={setActivityAllDay}
+          onChangeStart={setActivityStart}
+          onChangeEnd={setActivityEnd}
+          initialField={dateTimePickerField}
+          onClose={() => setDateTimePickerField(null)}
         />
       )}
     </>
