@@ -1,11 +1,21 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Lightning, ListBullets, CaretLeft, Check, MapPin, Plus, CaretRight } from "@phosphor-icons/react";
+import {
+  Lightning,
+  ListBullets,
+  CaretLeft,
+  Check,
+  MapPin,
+  XCircle,
+  Plus,
+  CaretRight,
+} from "@phosphor-icons/react";
 import Toggle from "./Toggle";
 import GlassButton from "./GlassButton";
+import TouchScroll from "./TouchScroll";
 import LocationSearchPanel from "./LocationSearchPanel";
-import DurationPickerPanel from "./DurationPickerPanel";
+import DurationPickerSheet from "./DurationPickerSheet";
 import type { Location } from "@/lib/mock-locations";
 
 // Sheet-level open/close (backdrop + sheet slide).
@@ -93,33 +103,44 @@ function ToggleRow({
 
 function LocationRow({
   location,
-  onClick,
+  onEdit,
+  onDelete,
 }: {
   location: Location | null;
-  onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
+  if (!location) {
+    return (
+      <button
+        type="button"
+        onClick={onEdit}
+        className="flex w-full items-center gap-3 px-4 py-4 text-left"
+      >
+        <span className="flex-1 font-karla text-body text-content-secondary">Location</span>
+        <MapPin size={20} className="shrink-0 text-content-secondary" />
+      </button>
+    );
+  }
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 px-4 py-4 text-left"
-    >
-      <div className="flex flex-1 flex-col">
-        {location ? (
-          <>
-            <span className="font-karla text-body font-medium text-content-primary">
-              {location.name}
-            </span>
-            <span className="font-karla text-subtitle text-content-secondary">
-              {location.subtitle}
-            </span>
-          </>
-        ) : (
-          <span className="font-karla text-body text-content-secondary">Location</span>
-        )}
-      </div>
-      <MapPin size={20} className="shrink-0 text-content-secondary" />
-    </button>
+    <div className="flex w-full items-center gap-3 px-4 py-4">
+      <button type="button" onClick={onEdit} className="flex flex-1 flex-col text-left">
+        <span className="font-karla text-body font-medium text-content-primary">
+          {location.name}
+        </span>
+        <span className="font-karla text-subtitle text-content-secondary">
+          {location.subtitle}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label="Remove location"
+        className="shrink-0 text-content-secondary"
+      >
+        <XCircle size={20} weight="fill" />
+      </button>
+    </div>
   );
 }
 
@@ -139,7 +160,7 @@ const INITIAL_TOGGLES: PollToggles = {
   showWhoVoted: false,
 };
 
-type Screen = "menu" | "poll" | "location" | "duration";
+type Screen = "menu" | "poll" | "location";
 
 export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [closing, setClosing] = useState(false);
@@ -151,6 +172,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [locationSheetTarget, setLocationSheetTarget] = useState<number | null>(null);
   const [locationQuery, setLocationQuery] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
+  const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [createActivity, setCreateActivity] = useState(true);
   const [bodyHeight, setBodyHeight] = useState<number | null>(null);
 
@@ -159,7 +181,6 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const menuPanelRef = useRef<HTMLDivElement>(null);
   const pollPanelRef = useRef<HTMLDivElement>(null);
   const locationPanelRef = useRef<HTMLDivElement>(null);
-  const durationPanelRef = useRef<HTMLDivElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
   const pendingScreenRef = useRef<Screen | null>(null);
   const timeoutsRef = useRef<number[]>([]);
@@ -167,8 +188,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   function panelRefFor(s: Screen) {
     if (s === "menu") return menuPanelRef;
     if (s === "poll") return pollPanelRef;
-    if (s === "location") return locationPanelRef;
-    return durationPanelRef;
+    return locationPanelRef;
   }
 
   // Sheets cap at (phone screen height - status bar clearance); beyond that
@@ -191,11 +211,16 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   // positioned, so they don't contribute to layout height on their own).
   // During a navigateTo() sequence this effect stands down — the sequence
   // drives bodyHeight itself, staged behind the content fade.
+  //
+  // Depends on a filled/empty signature rather than just locations.length:
+  // clearing the last remaining row's content (see handleDeleteLocation)
+  // changes its height (two lines -> one) without changing the array length.
+  const locationsSignature = locations.map((l) => (l ? "1" : "0")).join("");
   useLayoutEffect(() => {
     if (pendingScreenRef.current) return;
     const activePanel = panelRefFor(screen).current;
     if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
-  }, [screen, locations.length, toggles.limitDuration]);
+  }, [screen, locationsSignature, toggles.limitDuration]);
 
   // Focus the location search input once its screen has finished fading in.
   useEffect(() => {
@@ -277,6 +302,13 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
     navigateTo("poll");
   }
 
+  // Removes the row, except when it's the last one left — then just clear
+  // its content back to an empty "Location" placeholder, since there's
+  // always at least one row.
+  function handleDeleteLocation(index: number) {
+    setLocations((prev) => (prev.length === 1 ? [null] : prev.filter((_, i) => i !== index)));
+  }
+
   const locationExcludeIds =
     locationSheetTarget === null
       ? []
@@ -298,7 +330,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
       >
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/30" />
 
-        <div
+        <TouchScroll
           className="no-scrollbar relative overflow-y-auto transition-[height] ease-[cubic-bezier(0.32,0.72,0,1)]"
           style={{ height: bodyHeight ?? undefined, transitionDuration: `${RESIZE_MS}ms` }}
         >
@@ -358,7 +390,8 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                   <LocationRow
                     key={index}
                     location={location}
-                    onClick={() => openLocationSearch(index)}
+                    onEdit={() => openLocationSearch(index)}
+                    onDelete={() => handleDeleteLocation(index)}
                   />
                 ))}
                 <button
@@ -386,8 +419,8 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => navigateTo("duration")}
-                      className="rounded-full bg-card px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
+                      onClick={() => setDurationPickerOpen(true)}
+                      className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
                     >
                       {formatDuration(durationMinutes)}
                     </button>
@@ -449,24 +482,16 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
               inputRef={locationInputRef}
             />
           </div>
-
-          <div
-            ref={durationPanelRef}
-            inert={screen !== "duration"}
-            className="absolute inset-x-0 top-0 transition-opacity ease-out"
-            style={{
-              opacity: screen === "duration" && contentVisible ? 1 : 0,
-              transitionDuration: `${fadeDuration}ms`,
-            }}
-          >
-            <DurationPickerPanel
-              minutes={durationMinutes}
-              onChange={setDurationMinutes}
-              onBack={() => navigateTo("poll")}
-            />
-          </div>
-        </div>
+        </TouchScroll>
       </div>
+
+      {durationPickerOpen && (
+        <DurationPickerSheet
+          minutes={durationMinutes}
+          onChange={setDurationMinutes}
+          onClose={() => setDurationPickerOpen(false)}
+        />
+      )}
     </>
   );
 }

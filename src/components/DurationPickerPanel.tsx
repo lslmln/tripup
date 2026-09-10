@@ -1,8 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import { CaretLeft } from "@phosphor-icons/react";
-import GlassButton from "./GlassButton";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 const ITEM_HEIGHT = 40;
 const WHEEL_HEIGHT = 200;
@@ -34,6 +32,7 @@ function WheelColumn({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const settleTimeout = useRef<number | null>(null);
+  const drag = useRef<{ startY: number; startScrollTop: number } | null>(null);
 
   // Only ever snap to the initial value on mount — subsequent scrolling
   // drives `selected` via onChange, not the other way around, so the wheel
@@ -44,6 +43,31 @@ function WheelColumn({
     el.scrollTop = values.indexOf(selected) * ITEM_HEIGHT;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Matches TouchScroll: only a drag moves the wheel, like the iOS
+  // Simulator — the mouse wheel does nothing, you have to grab it.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const blockWheel = (e: WheelEvent) => e.preventDefault();
+    el.addEventListener("wheel", blockWheel, { passive: false });
+    return () => el.removeEventListener("wheel", blockWheel);
+  }, []);
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (!ref.current) return;
+    drag.current = { startY: e.clientY, startScrollTop: ref.current.scrollTop };
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!drag.current || !ref.current) return;
+    const delta = e.clientY - drag.current.startY;
+    ref.current.scrollTop = drag.current.startScrollTop - delta;
+  }
+
+  function endDrag() {
+    drag.current = null;
+  }
 
   function handleScroll() {
     const el = ref.current;
@@ -64,8 +88,17 @@ function WheelColumn({
     <div
       ref={ref}
       onScroll={handleScroll}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerLeave={endDrag}
       className="no-scrollbar snap-y snap-mandatory overflow-y-scroll"
-      style={{ height: WHEEL_HEIGHT, width: COLUMN_WIDTH, paddingBlock: WHEEL_PADDING }}
+      style={{
+        height: WHEEL_HEIGHT,
+        width: COLUMN_WIDTH,
+        paddingBlock: WHEEL_PADDING,
+        touchAction: "none",
+      }}
     >
       {values.map((value) => {
         const isSelected = value === selected;
@@ -97,26 +130,18 @@ function WheelColumn({
 export default function DurationPickerPanel({
   minutes,
   onChange,
-  onBack,
 }: {
   minutes: number;
   onChange: (minutes: number) => void;
-  onBack: () => void;
 }) {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
 
   return (
     <>
-      <div className="flex items-center justify-between px-4">
-        <GlassButton ariaLabel="Back" onClick={onBack}>
-          <CaretLeft size={22} />
-        </GlassButton>
-        <span className="font-karla text-body font-medium text-content-primary">
-          Duration
-        </span>
-        <div className="h-11 w-11 shrink-0" aria-hidden />
-      </div>
+      <p className="text-center font-karla text-body font-medium text-content-primary">
+        Duration
+      </p>
 
       <div className="relative mt-4 px-4">
         <div
