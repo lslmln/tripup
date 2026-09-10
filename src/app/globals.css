@@ -28,6 +28,10 @@
   --color-glass-border: rgba(255, 255, 255, 0.18);
   --color-glass-highlight: rgba(255, 255, 255, 0.25);
 
+  /* iOS-native UISwitch colors: system green when on, translucent gray track when off */
+  --color-toggle-on: #34c759;
+  --color-toggle-off: rgba(120, 120, 128, 0.32);
+
   /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
