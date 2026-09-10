@@ -38,17 +38,15 @@ export default function SimulatorTouch({
       {children}
       {pos && (
         <div
-          className="pointer-events-none absolute z-50 rounded-full transition-transform"
+          className="pointer-events-none absolute inset-0 z-50 rounded-full transition-transform"
           style={{
-            left: pos.x - SIZE / 2,
-            top: pos.y - SIZE / 2,
             width: SIZE,
             height: SIZE,
             background: isDown
               ? "rgba(180,180,180,0.55)"
               : "rgba(180,180,180,0.25)",
             border: "1px solid rgba(255,255,255,0.6)",
-            transform: isDown ? "scale(0.9)" : "scale(1)",
+            transform: `translate(${pos.x - SIZE / 2}px, ${pos.y - SIZE / 2}px) scale(${isDown ? 0.9 : 1})`,
           }}
         />
       )}

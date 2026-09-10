@@ -76,21 +76,3 @@ body {
     opacity: 0;
   }
 }
-
-/*
-  Page push/pop entrance: the entering screen starts at --enter-x (off-screen)
-  via @starting-style, which the browser resolves on first paint with no JS
-  timing dependency — unlike requestAnimationFrame, which this preview
-  environment throttles/pauses in backgrounded tabs, making a JS "flip after
-  one frame" trick unreliable. The outgoing screen (see PageTransition.tsx)
-  doesn't need this: it's an existing element getting a new committed style,
-  which CSS transitions pick up automatically on any state update.
-*/
-.screen-enter {
-  transition: transform var(--nav-duration, 350ms) var(--nav-ease);
-}
-@starting-style {
-  .screen-enter {
-    transform: translateX(var(--enter-x));
-  }
-}
