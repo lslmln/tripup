@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import { CaretLeft, MagnifyingGlass, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, MagnifyingGlass } from "@phosphor-icons/react";
 import GlassButton from "./GlassButton";
 import { mockLocations, type Location } from "@/lib/mock-locations";
 
@@ -65,8 +65,8 @@ export default function LocationSearchPanel({
               onClick={() => onSelect(location)}
               className="flex w-full items-center gap-3 py-3 text-left"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-icon-neutral text-content-primary">
-                <MapPin size={20} />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-card-light text-[18px]">
+                {location.emoji}
               </div>
               <div className="flex flex-col">
                 <span className="font-karla text-body font-medium text-content-primary">

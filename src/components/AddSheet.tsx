@@ -9,7 +9,6 @@ import {
   Check,
   CheckSquare,
   MapPin,
-  Smiley,
   Square,
   XCircle,
   Plus,
@@ -533,22 +532,13 @@ export default function AddSheet({
 
               {createActivity && (
                 <>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={activityTitle}
-                      onChange={(e) => setActivityTitle(e.target.value)}
-                      placeholder="Title"
-                      className="w-full rounded-card bg-card-light py-4 pr-12 pl-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Add emoji"
-                      className="absolute inset-y-0 right-4 flex items-center text-content-secondary"
-                    >
-                      <Smiley size={20} />
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    value={activityTitle}
+                    onChange={(e) => setActivityTitle(e.target.value)}
+                    placeholder="Title"
+                    className="w-full rounded-card bg-card-light px-4 py-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
+                  />
 
                   <div className="overflow-hidden rounded-card bg-card-light">
                     <div className="flex items-center justify-between px-4 py-3">
