@@ -226,7 +226,6 @@ export default function AddSheet({
   const [locationQuery, setLocationQuery] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
   const [durationPickerOpen, setDurationPickerOpen] = useState(false);
-  const [createActivity, setCreateActivity] = useState(true);
   const [activityTitle, setActivityTitle] = useState("");
   // Only trip members are eligible attendees — the same roster the trip's
   // Members screen shows, not the wider candidate pool used to invite people.
@@ -312,7 +311,7 @@ export default function AddSheet({
     if (pendingScreenRef.current) return;
     const activePanel = panelRefFor(screen).current;
     if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
-  }, [screen, locationsSignature, toggles.limitDuration, createActivity, activeDateField]);
+  }, [screen, locationsSignature, toggles.limitDuration, activeDateField]);
 
   // Focus the location search input once its screen has finished fading in.
   useEffect(() => {
@@ -424,25 +423,25 @@ export default function AddSheet({
   const filledLocationsCount = locations.filter((loc): loc is Location => loc !== null).length;
   const pollValid = pollQuestion.trim().length > 0 && filledLocationsCount >= 2;
 
-  // No one's voted yet, so the destination is unknown — the entry lands on
-  // today's timeline as a pending placeholder (warning icon, no location)
-  // rather than waiting for a full voting simulation this prototype doesn't have.
+  // Every poll creates its activity — there's no opting out, since a poll
+  // with nowhere for its winner to land wouldn't make sense. No one's voted
+  // yet either, so the destination is unknown: the entry lands on today's
+  // timeline as a pending placeholder (warning icon, no location) rather
+  // than waiting for a full voting simulation this prototype doesn't have.
   function handleSavePoll() {
-    if (createActivity) {
-      onActivityCreated?.({
-        id: `poll-${Date.now()}`,
-        type: "meal",
-        emoji: "",
-        pending: true,
-        title: activityTitle.trim() || smartActivityTitle(activityStart),
-        subtitle: "Poll in progress",
-        time: formatTimeRange(activityStart, activityEnd),
-        pollQuestion,
-        pollOptions: locations.filter((loc): loc is Location => loc !== null),
-        pollDeadline: Date.now() + durationMinutes * 60 * 1000,
-        attendeeIds,
-      });
-    }
+    onActivityCreated?.({
+      id: `poll-${Date.now()}`,
+      type: "meal",
+      emoji: "",
+      pending: true,
+      title: activityTitle.trim() || smartActivityTitle(activityStart),
+      subtitle: "Poll in progress",
+      time: formatTimeRange(activityStart, activityEnd),
+      pollQuestion,
+      pollOptions: locations.filter((loc): loc is Location => loc !== null),
+      pollDeadline: Date.now() + durationMinutes * 60 * 1000,
+      attendeeIds,
+    });
     setClosing(true);
   }
 
@@ -585,19 +584,13 @@ export default function AddSheet({
 
               <button
                 type="button"
-                onClick={() => {
-                  setCreateActivity(true);
-                  navigateTo("activity");
-                }}
+                onClick={() => navigateTo("activity")}
                 className="flex w-full items-center justify-between rounded-card bg-card-light px-4 py-4 text-left"
               >
                 <span className="font-karla text-body font-medium text-content-primary">
-                  Create activity from poll?
+                  Activity details
                 </span>
-                <span className="flex items-center gap-1 font-karla text-body text-content-secondary">
-                  {createActivity ? "Yes" : "No"}
-                  <CaretRight size={16} />
-                </span>
+                <CaretRight size={16} className="shrink-0 text-content-secondary" />
               </button>
             </div>
           </div>
@@ -619,117 +612,102 @@ export default function AddSheet({
             </div>
 
             <div className="flex flex-col gap-4 px-4 pt-4">
-              <div className="flex items-center justify-between rounded-card bg-card-light px-4 py-4">
-                <span className="font-karla text-body font-medium text-content-primary">
-                  Create activity from poll?
-                </span>
-                <Toggle
-                  checked={createActivity}
-                  onChange={setCreateActivity}
-                  ariaLabel="Create activity from poll?"
-                />
+              <input
+                type="text"
+                value={activityTitle}
+                onChange={(e) => setActivityTitle(e.target.value)}
+                placeholder="Title"
+                className="w-full rounded-card bg-card-light px-4 py-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
+              />
+
+              <div className="overflow-hidden rounded-card bg-card-light">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="font-karla text-body font-medium text-content-primary">
+                    Starts
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <DateChip
+                      label={formatDateChip(activityStart)}
+                      active={activeDateField === "startDate"}
+                      onClick={() => toggleDateField("startDate")}
+                    />
+                    <DateChip
+                      label={formatTimeChip(activityStart)}
+                      active={activeDateField === "startTime"}
+                      onClick={() => toggleDateField("startTime")}
+                    />
+                  </div>
+                </div>
+                {(activeDateField === "startDate" || activeDateField === "startTime") && (
+                  <div className="border-t border-border-primary">
+                    <DateTimeFieldEditor
+                      mode={activeDateField === "startDate" ? "date" : "time"}
+                      value={activityStart}
+                      onChange={setActivityStart}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t border-border-primary px-4 py-3">
+                  <span className="font-karla text-body font-medium text-content-primary">
+                    Ends
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <DateChip
+                      label={formatDateChip(activityEnd)}
+                      active={activeDateField === "endDate"}
+                      onClick={() => toggleDateField("endDate")}
+                    />
+                    <DateChip
+                      label={formatTimeChip(activityEnd)}
+                      active={activeDateField === "endTime"}
+                      onClick={() => toggleDateField("endTime")}
+                    />
+                  </div>
+                </div>
+                {(activeDateField === "endDate" || activeDateField === "endTime") && (
+                  <div className="border-t border-border-primary">
+                    <DateTimeFieldEditor
+                      mode={activeDateField === "endDate" ? "date" : "time"}
+                      value={activityEnd}
+                      onChange={setActivityEnd}
+                    />
+                  </div>
+                )}
               </div>
 
-              {createActivity && (
-                <>
-                  <input
-                    type="text"
-                    value={activityTitle}
-                    onChange={(e) => setActivityTitle(e.target.value)}
-                    placeholder="Title"
-                    className="w-full rounded-card bg-card-light px-4 py-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
-                  />
-
-                  <div className="overflow-hidden rounded-card bg-card-light">
-                    <div className="flex items-center justify-between px-4 py-3">
+              <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
+                {tripMembers.map((member) => {
+                  const checked = attendeeIds.includes(member.id);
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => toggleAttendee(member.id)}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left focus:outline-none"
+                    >
+                      {checked ? (
+                        <CheckSquare
+                          size={24}
+                          weight="fill"
+                          className="shrink-0"
+                          style={{ color: "var(--color-brand)" }}
+                        />
+                      ) : (
+                        <Square size={24} className="shrink-0 text-content-secondary" />
+                      )}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={member.avatar}
+                        alt=""
+                        className="h-11 w-11 shrink-0 rounded-full object-cover"
+                      />
                       <span className="font-karla text-body font-medium text-content-primary">
-                        Starts
+                        {member.name}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <DateChip
-                          label={formatDateChip(activityStart)}
-                          active={activeDateField === "startDate"}
-                          onClick={() => toggleDateField("startDate")}
-                        />
-                        <DateChip
-                          label={formatTimeChip(activityStart)}
-                          active={activeDateField === "startTime"}
-                          onClick={() => toggleDateField("startTime")}
-                        />
-                      </div>
-                    </div>
-                    {(activeDateField === "startDate" || activeDateField === "startTime") && (
-                      <div className="border-t border-border-primary">
-                        <DateTimeFieldEditor
-                          mode={activeDateField === "startDate" ? "date" : "time"}
-                          value={activityStart}
-                          onChange={setActivityStart}
-                        />
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between border-t border-border-primary px-4 py-3">
-                      <span className="font-karla text-body font-medium text-content-primary">
-                        Ends
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <DateChip
-                          label={formatDateChip(activityEnd)}
-                          active={activeDateField === "endDate"}
-                          onClick={() => toggleDateField("endDate")}
-                        />
-                        <DateChip
-                          label={formatTimeChip(activityEnd)}
-                          active={activeDateField === "endTime"}
-                          onClick={() => toggleDateField("endTime")}
-                        />
-                      </div>
-                    </div>
-                    {(activeDateField === "endDate" || activeDateField === "endTime") && (
-                      <div className="border-t border-border-primary">
-                        <DateTimeFieldEditor
-                          mode={activeDateField === "endDate" ? "date" : "time"}
-                          value={activityEnd}
-                          onChange={setActivityEnd}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
-                    {tripMembers.map((member) => {
-                      const checked = attendeeIds.includes(member.id);
-                      return (
-                        <button
-                          key={member.id}
-                          type="button"
-                          onClick={() => toggleAttendee(member.id)}
-                          className="flex w-full items-center gap-3 px-4 py-3 text-left focus:outline-none"
-                        >
-                          {checked ? (
-                            <CheckSquare
-                              size={24}
-                              weight="fill"
-                              className="shrink-0"
-                              style={{ color: "var(--color-brand)" }}
-                            />
-                          ) : (
-                            <Square size={24} className="shrink-0 text-content-secondary" />
-                          )}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={member.avatar}
-                            alt=""
-                            className="h-11 w-11 shrink-0 rounded-full object-cover"
-                          />
-                          <span className="font-karla text-body font-medium text-content-primary">
-                            {member.name}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
