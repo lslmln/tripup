@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Check, CheckSquare, MagnifyingGlass, Square, X } from "@phosphor-icons/react";
 import GlassButton from "./GlassButton";
 import StatusBar from "./StatusBar";
+import TouchScroll from "./TouchScroll";
 import { glassStyle } from "./glass";
 import { mockCandidates, type Candidate } from "@/lib/mock-candidates";
 
@@ -83,7 +84,7 @@ export default function AddMemberSheet({
             onClick={handleDone}
             style={
               selected.length > 0
-                ? { background: "var(--color-brand)", borderColor: "var(--color-brand)" }
+                ? { background: "var(--color-brand)", border: "1px solid var(--color-brand)" }
                 : undefined
             }
           >
@@ -92,7 +93,7 @@ export default function AddMemberSheet({
         </div>
 
         <div className="relative min-h-0 flex-1">
-          <div className="no-scrollbar h-full overflow-y-auto pt-3 pb-23">
+          <TouchScroll className="no-scrollbar h-full overflow-y-auto pt-3 pb-23">
             <div className="divide-y divide-border-primary">
               {mockCandidates.map((candidate) => {
                 const checked = selectedIds.includes(candidate.id);
@@ -101,7 +102,7 @@ export default function AddMemberSheet({
                     key={candidate.id}
                     type="button"
                     onClick={() => toggle(candidate.id)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left focus:outline-none"
                   >
                     {checked ? (
                       <CheckSquare
@@ -126,7 +127,7 @@ export default function AddMemberSheet({
                 );
               })}
             </div>
-          </div>
+          </TouchScroll>
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-20"
             style={{
@@ -160,7 +161,7 @@ export default function AddMemberSheet({
                 type="button"
                 aria-label={`Remove ${candidate.name}`}
                 onClick={() => toggle(candidate.id)}
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-content-secondary"
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-content-secondary focus:outline-none"
               >
                 <X size={12} weight="bold" />
               </button>
