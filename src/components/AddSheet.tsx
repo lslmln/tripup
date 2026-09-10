@@ -1,32 +1,32 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import {
-  Lightning,
-  ListBullets,
-  CaretLeft,
-  Check,
-  MapPin,
-  Plus,
-  CaretRight,
-} from "@phosphor-icons/react";
+import { Lightning, ListBullets, CaretLeft, Check, MapPin, Plus, CaretRight } from "@phosphor-icons/react";
 import Toggle from "./Toggle";
 import GlassButton from "./GlassButton";
-import LocationSearchSheet from "./LocationSearchSheet";
-import DurationPickerSheet from "./DurationPickerSheet";
+import LocationSearchPanel from "./LocationSearchPanel";
+import DurationPickerPanel from "./DurationPickerPanel";
 import type { Location } from "@/lib/mock-locations";
 
 // Sheet-level open/close (backdrop + sheet slide).
 const DURATION_MS = 300;
 const SHEET_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
-// Menu <-> poll screen transition: fade the old content out, resize the
-// sheet to the new screen's height, then fade the new content in. Exits are
+// Screen-to-screen transition: fade the old content out, resize the sheet
+// to the new screen's height, then fade the new content in. Exits are
 // shorter than entrances (asymmetric timing); the resize keeps the sheet's
 // own established curve for cohesion with its open/close motion.
 const FADE_OUT_MS = 100;
 const RESIZE_MS = 220;
 const FADE_IN_MS = 160;
+
+// The sheet never grows past (phone screen height - status bar clearance),
+// matching AddMemberSheet's top-11 convention for how much of the screen a
+// sheet may cover. Beyond that, its content scrolls instead of the sheet
+// (and the whole modal) growing off-screen.
+const STATUS_BAR_CLEARANCE = 44;
+// Handle bar (16 margin + 6 height) + sheet's own pt-3 (12) + pb-16 (64).
+const SHEET_CHROME_HEIGHT = 16 + 6 + 12 + 64;
 
 const DEFAULT_DURATION_MINUTES = 30;
 
@@ -139,7 +139,7 @@ const INITIAL_TOGGLES: PollToggles = {
   showWhoVoted: false,
 };
 
-type Screen = "menu" | "poll";
+type Screen = "menu" | "poll" | "location" | "duration";
 
 export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [closing, setClosing] = useState(false);
@@ -149,8 +149,8 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [toggles, setToggles] = useState<PollToggles>(INITIAL_TOGGLES);
   const [locations, setLocations] = useState<(Location | null)[]>([null]);
   const [locationSheetTarget, setLocationSheetTarget] = useState<number | null>(null);
+  const [locationQuery, setLocationQuery] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
-  const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [createActivity, setCreateActivity] = useState(true);
   const [bodyHeight, setBodyHeight] = useState<number | null>(null);
 
@@ -158,8 +158,27 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const menuPanelRef = useRef<HTMLDivElement>(null);
   const pollPanelRef = useRef<HTMLDivElement>(null);
+  const locationPanelRef = useRef<HTMLDivElement>(null);
+  const durationPanelRef = useRef<HTMLDivElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
   const pendingScreenRef = useRef<Screen | null>(null);
   const timeoutsRef = useRef<number[]>([]);
+
+  function panelRefFor(s: Screen) {
+    if (s === "menu") return menuPanelRef;
+    if (s === "poll") return pollPanelRef;
+    if (s === "location") return locationPanelRef;
+    return durationPanelRef;
+  }
+
+  // Sheets cap at (phone screen height - status bar clearance); beyond that
+  // the content scrolls instead of the sheet growing past the screen.
+  function clampToMaxHeight(natural: number) {
+    const screenHeight = backdropRef.current?.clientHeight;
+    if (!screenHeight) return natural;
+    const max = screenHeight - STATUS_BAR_CLEARANCE - SHEET_CHROME_HEIGHT;
+    return Math.min(natural, max);
+  }
 
   useEffect(() => {
     return () => {
@@ -167,17 +186,23 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
-  // The sheet's two screens (menu, poll) are both always mounted, stacked on
-  // top of each other. At rest, the wrapper's height tracks whichever one is
-  // active (they're absolutely positioned, so they don't contribute to
-  // layout height on their own). During a navigateTo() sequence this effect
-  // stands down — the sequence drives bodyHeight itself, staged behind the
-  // content fade.
+  // Every screen is always mounted, stacked on top of each other. At rest,
+  // the wrapper's height tracks whichever one is active (they're absolutely
+  // positioned, so they don't contribute to layout height on their own).
+  // During a navigateTo() sequence this effect stands down — the sequence
+  // drives bodyHeight itself, staged behind the content fade.
   useLayoutEffect(() => {
     if (pendingScreenRef.current) return;
-    const activePanel = screen === "menu" ? menuPanelRef.current : pollPanelRef.current;
-    if (activePanel) setBodyHeight(activePanel.scrollHeight);
+    const activePanel = panelRefFor(screen).current;
+    if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
   }, [screen, locations.length, toggles.limitDuration]);
+
+  // Focus the location search input once its screen has finished fading in.
+  useEffect(() => {
+    if (screen === "location" && contentVisible) {
+      locationInputRef.current?.focus();
+    }
+  }, [screen, contentVisible]);
 
   // Fade the current screen out, resize the sheet to the target screen's
   // height while both are invisible, then fade the target screen in.
@@ -188,8 +213,8 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
     setContentVisible(false);
 
     const t1 = window.setTimeout(() => {
-      const nextPanel = target === "menu" ? menuPanelRef.current : pollPanelRef.current;
-      if (nextPanel) setBodyHeight(nextPanel.scrollHeight);
+      const nextPanel = panelRefFor(target).current;
+      if (nextPanel) setBodyHeight(clampToMaxHeight(nextPanel.scrollHeight));
       setScreen(target);
 
       const t2 = window.setTimeout(() => {
@@ -226,15 +251,21 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
     return (value: boolean) => setToggles((prev) => ({ ...prev, [key]: value }));
   }
 
+  function openLocationSearch(index: number) {
+    setLocationSheetTarget(index);
+    setLocationQuery("");
+    navigateTo("location");
+  }
+
   // The trailing "Add an option" action reuses the last slot if it's still
   // empty, rather than stacking a second empty row.
   function handleAddOption() {
     const lastIndex = locations.length - 1;
     if (locations[lastIndex] === null) {
-      setLocationSheetTarget(lastIndex);
+      openLocationSearch(lastIndex);
     } else {
       setLocations((prev) => [...prev, null]);
-      setLocationSheetTarget(locations.length);
+      openLocationSearch(locations.length);
     }
   }
 
@@ -243,6 +274,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
     if (target === null) return;
     setLocations((prev) => prev.map((loc, i) => (i === target ? location : loc)));
     setLocationSheetTarget(null);
+    navigateTo("poll");
   }
 
   const locationExcludeIds =
@@ -267,7 +299,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/30" />
 
         <div
-          className="relative overflow-hidden transition-[height] ease-[cubic-bezier(0.32,0.72,0,1)]"
+          className="no-scrollbar relative overflow-y-auto transition-[height] ease-[cubic-bezier(0.32,0.72,0,1)]"
           style={{ height: bodyHeight ?? undefined, transitionDuration: `${RESIZE_MS}ms` }}
         >
           <div
@@ -326,7 +358,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                   <LocationRow
                     key={index}
                     location={location}
-                    onClick={() => setLocationSheetTarget(index)}
+                    onClick={() => openLocationSearch(index)}
                   />
                 ))}
                 <button
@@ -354,8 +386,8 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => setDurationPickerOpen(true)}
-                      className="rounded-full bg-card-light px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
+                      onClick={() => navigateTo("duration")}
+                      className="rounded-full bg-card px-3 py-1.5 font-karla text-subtitle text-content-primary transition-transform duration-150 ease-out active:scale-[0.96]"
                     >
                       {formatDuration(durationMinutes)}
                     </button>
@@ -398,24 +430,43 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
               </button>
             </div>
           </div>
+
+          <div
+            ref={locationPanelRef}
+            inert={screen !== "location"}
+            className="absolute inset-x-0 top-0 transition-opacity ease-out"
+            style={{
+              opacity: screen === "location" && contentVisible ? 1 : 0,
+              transitionDuration: `${fadeDuration}ms`,
+            }}
+          >
+            <LocationSearchPanel
+              query={locationQuery}
+              onQueryChange={setLocationQuery}
+              excludeIds={locationExcludeIds}
+              onSelect={handleLocationSelect}
+              onBack={() => navigateTo("poll")}
+              inputRef={locationInputRef}
+            />
+          </div>
+
+          <div
+            ref={durationPanelRef}
+            inert={screen !== "duration"}
+            className="absolute inset-x-0 top-0 transition-opacity ease-out"
+            style={{
+              opacity: screen === "duration" && contentVisible ? 1 : 0,
+              transitionDuration: `${fadeDuration}ms`,
+            }}
+          >
+            <DurationPickerPanel
+              minutes={durationMinutes}
+              onChange={setDurationMinutes}
+              onBack={() => navigateTo("poll")}
+            />
+          </div>
         </div>
       </div>
-
-      {locationSheetTarget !== null && (
-        <LocationSearchSheet
-          excludeIds={locationExcludeIds}
-          onSelect={handleLocationSelect}
-          onClose={() => setLocationSheetTarget(null)}
-        />
-      )}
-
-      {durationPickerOpen && (
-        <DurationPickerSheet
-          initialMinutes={durationMinutes}
-          onConfirm={setDurationMinutes}
-          onClose={() => setDurationPickerOpen(false)}
-        />
-      )}
     </>
   );
 }
