@@ -89,7 +89,7 @@ export default function PollVoteSheet({
       </div>
       <div
         ref={sheetRef}
-        className="sheet-enter absolute inset-x-0 top-17 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[32px] bg-card"
+        className="sheet-enter absolute inset-x-0 bottom-0 z-50 flex max-h-[calc(100%-4.25rem)] flex-col overflow-hidden rounded-t-[32px] bg-card"
       >
         <div className="mx-auto mt-3 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-white/30" />
 
