@@ -6,8 +6,8 @@ export const glassStyle: CSSProperties = {
   border: "1px solid var(--color-glass-border)",
   boxShadow:
     "inset 0 1px 0 var(--color-glass-highlight), inset 0 -1px 3px rgba(0,0,0,0.35)",
-  backdropFilter: "blur(20px)",
-  WebkitBackdropFilter: "blur(20px)",
+  backdropFilter: "blur(20px) brightness(0.7)",
+  WebkitBackdropFilter: "blur(20px) brightness(0.7)",
 };
 
 // Same material, but attempts to refract/distort the content behind it via
