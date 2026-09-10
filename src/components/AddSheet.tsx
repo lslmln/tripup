@@ -5,11 +5,13 @@ import {
   Lightning,
   ListBullets,
   CaretLeft,
+  CaretRight,
   Check,
+  CheckSquare,
   MapPin,
+  Square,
   XCircle,
   Plus,
-  CaretRight,
 } from "@phosphor-icons/react";
 import Toggle from "./Toggle";
 import GlassButton from "./GlassButton";
@@ -17,6 +19,7 @@ import TouchScroll from "./TouchScroll";
 import LocationSearchPanel from "./LocationSearchPanel";
 import DurationPickerSheet from "./DurationPickerSheet";
 import type { Location } from "@/lib/mock-locations";
+import { mockCandidates } from "@/lib/mock-candidates";
 
 // Sheet-level open/close (backdrop + sheet slide).
 const DURATION_MS = 300;
@@ -164,7 +167,7 @@ const INITIAL_TOGGLES: PollToggles = {
   showWhoVoted: false,
 };
 
-type Screen = "menu" | "poll" | "location";
+type Screen = "menu" | "poll" | "location" | "activity";
 
 export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [closing, setClosing] = useState(false);
@@ -178,6 +181,10 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
   const [durationPickerOpen, setDurationPickerOpen] = useState(false);
   const [createActivity, setCreateActivity] = useState(true);
+  const [activityTitle, setActivityTitle] = useState("");
+  const [attendeeIds, setAttendeeIds] = useState<string[]>(() =>
+    mockCandidates.map((candidate) => candidate.id),
+  );
   const [bodyHeight, setBodyHeight] = useState<number | null>(null);
 
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -185,6 +192,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   const menuPanelRef = useRef<HTMLDivElement>(null);
   const pollPanelRef = useRef<HTMLDivElement>(null);
   const locationPanelRef = useRef<HTMLDivElement>(null);
+  const activityPanelRef = useRef<HTMLDivElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
   const pendingScreenRef = useRef<Screen | null>(null);
   const timeoutsRef = useRef<number[]>([]);
@@ -192,6 +200,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
   function panelRefFor(s: Screen) {
     if (s === "menu") return menuPanelRef;
     if (s === "poll") return pollPanelRef;
+    if (s === "activity") return activityPanelRef;
     return locationPanelRef;
   }
 
@@ -224,7 +233,7 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
     if (pendingScreenRef.current) return;
     const activePanel = panelRefFor(screen).current;
     if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
-  }, [screen, locationsSignature, toggles.limitDuration]);
+  }, [screen, locationsSignature, toggles.limitDuration, createActivity]);
 
   // Focus the location search input once its screen has finished fading in.
   useEffect(() => {
@@ -278,6 +287,12 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
 
   function updateToggle(key: keyof PollToggles) {
     return (value: boolean) => setToggles((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function toggleAttendee(id: string) {
+    setAttendeeIds((prev) =>
+      prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id],
+    );
   }
 
   function openLocationSearch(index: number) {
@@ -455,7 +470,10 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
 
               <button
                 type="button"
-                onClick={() => setCreateActivity((prev) => !prev)}
+                onClick={() => {
+                  setCreateActivity(true);
+                  navigateTo("activity");
+                }}
                 className="flex w-full items-center justify-between rounded-card bg-card-light px-4 py-4 text-left"
               >
                 <span className="font-karla text-body font-medium text-content-primary">
@@ -466,6 +484,116 @@ export default function AddSheet({ onClose }: { onClose: () => void }) {
                   <CaretRight size={16} />
                 </span>
               </button>
+            </div>
+          </div>
+
+          <div
+            ref={activityPanelRef}
+            inert={screen !== "activity"}
+            className="absolute inset-x-0 top-0 transition-opacity ease-out"
+            style={{
+              opacity: screen === "activity" && contentVisible ? 1 : 0,
+              transitionDuration: `${fadeDuration}ms`,
+            }}
+          >
+            <div className="flex items-center justify-between px-4">
+              <GlassButton ariaLabel="Back" onClick={() => navigateTo("poll")}>
+                <CaretLeft size={22} />
+              </GlassButton>
+              <span className="font-karla text-body font-medium text-content-primary">
+                Add activity
+              </span>
+              <GlassButton ariaLabel="Save activity" onClick={() => setClosing(true)}>
+                <Check size={22} />
+              </GlassButton>
+            </div>
+
+            <div className="flex flex-col gap-4 px-4 pt-4">
+              <div className="flex items-center justify-between rounded-card bg-card-light px-4 py-4">
+                <span className="font-karla text-body font-medium text-content-primary">
+                  Create activity from poll?
+                </span>
+                <Toggle
+                  checked={createActivity}
+                  onChange={setCreateActivity}
+                  ariaLabel="Create activity from poll?"
+                />
+              </div>
+
+              {createActivity && (
+                <>
+                  <input
+                    type="text"
+                    value={activityTitle}
+                    onChange={(e) => setActivityTitle(e.target.value)}
+                    placeholder="Title"
+                    className="w-full rounded-card bg-card-light px-4 py-4 font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
+                  />
+
+                  <div className="overflow-hidden rounded-card bg-card-light">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="font-karla text-body font-medium text-content-primary">
+                        Starts
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
+                          June 2024
+                        </span>
+                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
+                          9:41 AM
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-border-primary px-4 py-3">
+                      <span className="font-karla text-body font-medium text-content-primary">
+                        Ends
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
+                          June 2024
+                        </span>
+                        <span className="rounded-full bg-toggle-off px-3 py-1.5 font-karla text-subtitle text-content-primary">
+                          9:41 AM
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
+                    {mockCandidates.map((candidate) => {
+                      const checked = attendeeIds.includes(candidate.id);
+                      return (
+                        <button
+                          key={candidate.id}
+                          type="button"
+                          onClick={() => toggleAttendee(candidate.id)}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left focus:outline-none"
+                        >
+                          {checked ? (
+                            <CheckSquare
+                              size={24}
+                              weight="fill"
+                              className="shrink-0"
+                              style={{ color: "var(--color-brand)" }}
+                            />
+                          ) : (
+                            <Square size={24} className="shrink-0 text-content-secondary" />
+                          )}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={candidate.avatar}
+                            alt=""
+                            className="h-11 w-11 shrink-0 rounded-full object-cover"
+                          />
+                          <span className="font-karla text-body font-medium text-content-primary">
+                            {candidate.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
