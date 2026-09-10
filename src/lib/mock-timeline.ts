@@ -1,4 +1,5 @@
 import type { Location } from "./mock-locations";
+import type { Bill } from "./bills";
 
 export type TimelineItemType = "meal" | "activity" | "transport";
 
@@ -23,6 +24,7 @@ export type TimelineItem = {
   // vote sheet names voters or just shows counts.
   pollShowWhoVoted?: boolean;
   attendeeIds?: string[];
+  bills?: Bill[];
 };
 
 export type TimelineSection = {

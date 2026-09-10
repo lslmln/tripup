@@ -8,8 +8,10 @@ import {
   DotsThreeOutline,
   MapPin,
   Plus,
+  Prohibit,
   Warning,
 } from "@phosphor-icons/react";
+import AddBillSheet from "./AddBillSheet";
 import GlassButton from "./GlassButton";
 import PollVoteSheet from "./PollVoteSheet";
 import SegmentedControl from "./SegmentedControl";
@@ -19,12 +21,16 @@ import { getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
 import { formatCountdown, pickPollWinner, resolvePollItem } from "@/lib/poll";
 import { CURRENT_USER_ID } from "@/lib/mock-members";
+import { formatMoney, splitShare, type Bill } from "@/lib/bills";
 import type { Trip } from "@/lib/mock-trips";
 import type { Member } from "@/lib/mock-members";
 import type { TimelineItem, TimelineSection } from "@/lib/mock-timeline";
 
 const PENDING_COLOR = "#FFDA48";
 const DETAIL_TABS = ["Details", "Bill"];
+// This whole prototype's activities are food outings, so every bill sits
+// under one fixed category — no separate category picker to build.
+const BILL_CATEGORY = "Food";
 
 function findItem(sections: TimelineSection[], activityId: string): TimelineItem | null {
   for (const section of sections) {
@@ -51,6 +57,9 @@ export default function ActivityDetailScreen({
   const [tripMembers] = useState<Member[]>(() => getStoredMembers(trip.id, fallbackMembers));
   const [voteSheetOpen, setVoteSheetOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [activeTab, setActiveTab] = useState(0);
+  const [billSheetOpen, setBillSheetOpen] = useState(false);
+  const [editingBill, setEditingBill] = useState<Bill | null>(null);
 
   // Writes the item back to the shared store (so it survives navigating
   // away and matches what the trip timeline shows) as well as local state.
@@ -112,6 +121,30 @@ export default function ActivityDetailScreen({
     });
   }
 
+  // Bills are always paid by whoever's keying them in — this prototype has
+  // only one "logged in" user, so that's always Ari.
+  const payer = tripMembers.find((member) => member.id === CURRENT_USER_ID) ?? attendees[0];
+
+  function saveBill(bill: Bill) {
+    if (!item) return;
+    const existing = item.bills ?? [];
+    const isEdit = existing.some((b) => b.id === bill.id);
+    persistItem({
+      ...item,
+      bills: isEdit ? existing.map((b) => (b.id === bill.id ? bill : b)) : [...existing, bill],
+    });
+  }
+
+  function openAddBill() {
+    setEditingBill(null);
+    setBillSheetOpen(true);
+  }
+
+  function openEditBill(bill: Bill) {
+    setEditingBill(bill);
+    setBillSheetOpen(true);
+  }
+
   return (
     <div className="flex h-full w-full flex-col bg-background-detail">
       <div className="shrink-0">
@@ -143,11 +176,13 @@ export default function ActivityDetailScreen({
           </div>
         </div>
 
-        <SegmentedControl tabs={DETAIL_TABS} />
+        <SegmentedControl tabs={DETAIL_TABS} onChange={setActiveTab} />
       </div>
 
       <div className="relative min-h-0 flex-1">
         <TouchScroll className="no-scrollbar h-full overflow-y-auto pt-4 pb-23">
+          {activeTab === 0 ? (
+          <>
           <div className="px-4">
             <h2 className="mb-3 font-karla text-header font-medium text-content-primary">
               Location
@@ -235,6 +270,87 @@ export default function ActivityDetailScreen({
               </button>
             </div>
           </div>
+          </>
+          ) : (
+          <div className="px-4">
+            {!item.bills || item.bills.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-20">
+                <Prohibit size={40} className="text-content-secondary" />
+                <span className="font-karla text-body text-content-secondary">
+                  No bills added yet
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {item.bills.map((bill) => {
+                  const splitMembers = tripMembers.filter((member) =>
+                    bill.splitWith.includes(member.id),
+                  );
+                  const share = splitShare(bill.amount, bill.splitWith.length);
+                  return (
+                    <div
+                      key={bill.id}
+                      className="overflow-hidden rounded-card bg-card-light"
+                    >
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="font-karla text-header font-medium text-content-primary">
+                          {BILL_CATEGORY}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openEditBill(bill)}
+                          className="font-karla text-body font-medium"
+                          style={{ color: "var(--color-brand)" }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <div className="border-t border-border-primary px-4 pt-3">
+                        <span className="font-karla text-subtitle text-content-secondary">
+                          Paid by
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 pb-3">
+                        <span className="font-karla text-body font-medium text-content-primary">
+                          {payer.name}
+                        </span>
+                        <span className="font-karla text-body font-medium text-content-primary">
+                          ${formatMoney(bill.amount)}
+                        </span>
+                      </div>
+                      <div className="border-t border-border-primary px-4 pt-3">
+                        <span className="font-karla text-subtitle text-content-secondary">
+                          For
+                        </span>
+                      </div>
+                      {splitMembers.map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between px-4 py-3"
+                        >
+                          <span className="font-karla text-body font-medium text-content-primary">
+                            {member.name}
+                          </span>
+                          <span className="font-karla text-body font-medium text-content-primary">
+                            ${formatMoney(share)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={openAddBill}
+              className="mt-6 w-full rounded-full py-3.5 text-center font-karla text-body font-semibold"
+              style={{ background: "var(--color-brand)", color: "#fff" }}
+            >
+              {item.bills && item.bills.length > 0 ? "Add another bill" : "Add a bill"}
+            </button>
+          </div>
+          )}
         </TouchScroll>
       </div>
 
@@ -245,6 +361,16 @@ export default function ActivityDetailScreen({
           now={now}
           onVote={castVote}
           onClose={() => setVoteSheetOpen(false)}
+        />
+      )}
+
+      {billSheetOpen && (
+        <AddBillSheet
+          attendees={attendees}
+          payer={payer}
+          initialBill={editingBill ?? undefined}
+          onSave={saveBill}
+          onClose={() => setBillSheetOpen(false)}
         />
       )}
     </div>

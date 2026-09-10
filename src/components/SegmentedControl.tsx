@@ -18,7 +18,13 @@ const EASE = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 // first screenshot after the click. This imperative approach is the one
 // proven (by the user actually seeing real motion during the page
 // transition) to produce visible animation here.
-export default function SegmentedControl({ tabs = DEFAULT_TABS }: { tabs?: string[] }) {
+export default function SegmentedControl({
+  tabs = DEFAULT_TABS,
+  onChange,
+}: {
+  tabs?: string[];
+  onChange?: (index: number) => void;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const pillRef = useRef<HTMLDivElement>(null);
   const prevIndex = useRef(0);
@@ -55,7 +61,10 @@ export default function SegmentedControl({ tabs = DEFAULT_TABS }: { tabs?: strin
         <button
           key={tab}
           type="button"
-          onClick={() => setActiveIndex(i)}
+          onClick={() => {
+            setActiveIndex(i);
+            onChange?.(i);
+          }}
           className={`relative z-10 flex-1 rounded-full py-2 text-center font-karla text-subtitle font-medium transition-colors duration-150 ${
             activeIndex === i
               ? "text-content-primary"
