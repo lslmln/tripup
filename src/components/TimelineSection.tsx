@@ -3,8 +3,10 @@ import TimelineItem from "./TimelineItem";
 
 export default function TimelineSection({
   section,
+  tripId,
 }: {
   section: TimelineSectionType;
+  tripId: string;
 }) {
   return (
     <div id={`section-${section.id}`} className="px-4">
@@ -13,7 +15,7 @@ export default function TimelineSection({
       </h2>
       <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card">
         {section.items.map((item) => (
-          <TimelineItem key={item.id} item={item} />
+          <TimelineItem key={item.id} item={item} tripId={tripId} />
         ))}
       </div>
     </div>

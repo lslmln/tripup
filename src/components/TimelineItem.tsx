@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Warning } from "@phosphor-icons/react";
 import type { TimelineItem as TimelineItemType } from "@/lib/mock-timeline";
 
@@ -5,9 +6,15 @@ import type { TimelineItem as TimelineItemType } from "@/lib/mock-timeline";
 // pending state shows a warning instead of a location emoji it can't have yet.
 const PENDING_COLOR = "#FFDA48";
 
-export default function TimelineItem({ item }: { item: TimelineItemType }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3">
+export default function TimelineItem({
+  item,
+  tripId,
+}: {
+  item: TimelineItemType;
+  tripId: string;
+}) {
+  const content = (
+    <>
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-card-light text-[18px]">
         {item.pending ? (
           <Warning size={20} weight="fill" style={{ color: PENDING_COLOR }} />
@@ -26,6 +33,21 @@ export default function TimelineItem({ item }: { item: TimelineItemType }) {
       <span className="shrink-0 font-karla text-subtitle text-content-secondary">
         {item.time}
       </span>
-    </div>
+    </>
   );
+
+  // Only poll-pending entries have a detail screen to open right now — a
+  // decided activity isn't tappable yet.
+  if (item.pending) {
+    return (
+      <Link
+        href={`/trip/${tripId}/activity/${item.id}`}
+        className="flex items-center gap-3 px-4 py-3 transition-transform duration-150 ease-out active:scale-[0.98]"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className="flex items-center gap-3 px-4 py-3">{content}</div>;
 }

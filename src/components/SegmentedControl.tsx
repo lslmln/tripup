@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { glassStyle } from "./glass";
 
-const TABS = ["Timeline", "Balance", "Transactions"];
+const DEFAULT_TABS = ["Timeline", "Balance", "Transactions"];
 const DURATION_MS = 300;
 // A "back ease-out" with a touch of overshoot — closer to the springy snap
 // of a real iOS segmented control than a plain ease-in-out, and strong
@@ -18,7 +18,7 @@ const EASE = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 // first screenshot after the click. This imperative approach is the one
 // proven (by the user actually seeing real motion during the page
 // transition) to produce visible animation here.
-export default function SegmentedControl() {
+export default function SegmentedControl({ tabs = DEFAULT_TABS }: { tabs?: string[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const pillRef = useRef<HTMLDivElement>(null);
   const prevIndex = useRef(0);
@@ -42,7 +42,7 @@ export default function SegmentedControl() {
         ref={pillRef}
         className="absolute inset-y-1 left-1 rounded-full"
         style={{
-          width: `calc((100% - 8px) / ${TABS.length})`,
+          width: `calc((100% - 8px) / ${tabs.length})`,
           transform: "translateX(0%)",
           background: "rgba(255, 255, 255, 0.18)",
           boxShadow:
@@ -51,7 +51,7 @@ export default function SegmentedControl() {
           WebkitBackdropFilter: "blur(12px)",
         }}
       />
-      {TABS.map((tab, i) => (
+      {tabs.map((tab, i) => (
         <button
           key={tab}
           type="button"

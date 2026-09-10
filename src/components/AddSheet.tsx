@@ -51,7 +51,7 @@ const STATUS_BAR_CLEARANCE = 44;
 // Handle bar (16 margin + 6 height) + sheet's own pt-3 (12) + pb-16 (64).
 const SHEET_CHROME_HEIGHT = 16 + 6 + 12 + 64;
 
-const DEFAULT_DURATION_MINUTES = 30;
+const DEFAULT_DURATION_MINUTES = 5;
 
 function formatDuration(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
@@ -437,6 +437,10 @@ export default function AddSheet({
         title: activityTitle.trim() || smartActivityTitle(activityStart),
         subtitle: "Poll in progress",
         time: formatTimeRange(activityStart, activityEnd),
+        pollQuestion,
+        pollOptions: locations.filter((loc): loc is Location => loc !== null),
+        pollDeadline: Date.now() + durationMinutes * 60 * 1000,
+        attendeeIds,
       });
     }
     setClosing(true);

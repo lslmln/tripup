@@ -1,3 +1,5 @@
+import type { Location } from "./mock-locations";
+
 export type TimelineItemType = "meal" | "activity" | "transport";
 
 export type TimelineItem = {
@@ -8,8 +10,14 @@ export type TimelineItem = {
   subtitle: string;
   time: string;
   // True for an activity created from a poll whose location hasn't been
-  // decided yet — shown with a warning icon in place of a place emoji.
+  // decided yet — shown with a warning icon in place of a place emoji, and
+  // tappable through to the poll's own detail screen.
   pending?: boolean;
+  pollQuestion?: string;
+  pollOptions?: Location[];
+  // Epoch ms — when the poll closes and (eventually) a winner is picked.
+  pollDeadline?: number;
+  attendeeIds?: string[];
 };
 
 export type TimelineSection = {
