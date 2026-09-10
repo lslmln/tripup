@@ -120,10 +120,10 @@ export default function PollVoteSheet({
         </div>
 
         <TouchScroll
-          className="no-scrollbar overflow-y-auto pb-8 transition-[height] duration-200 ease-out"
+          className="no-scrollbar overflow-y-auto transition-[height] duration-200 ease-out"
           style={{ height: bodyHeight ?? undefined }}
         >
-          <div ref={contentRef} className="flex flex-col gap-4 px-4 pt-1">
+          <div ref={contentRef} className="flex flex-col gap-4 px-4 pt-1 pb-8">
             {creator && (
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
