@@ -23,7 +23,7 @@ export default function ReplayButton() {
       className="flex shrink-0 items-center gap-2 rounded-full bg-neutral-900 px-4 py-3 font-karla text-sm font-medium text-white shadow-lg transition hover:bg-neutral-800 active:scale-[0.97]"
     >
       <ArrowCounterClockwise size={16} weight="bold" />
-      Refresh
+      Start from beginning
     </button>
   );
 }
