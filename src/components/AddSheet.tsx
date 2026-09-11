@@ -49,8 +49,13 @@ const FADE_IN_MS = 160;
 // sheet may cover. Beyond that, its content scrolls instead of the sheet
 // (and the whole modal) growing off-screen.
 const STATUS_BAR_CLEARANCE = 68;
-// Handle bar (16 margin + 6 height) + sheet's own pt-3 (12) + pb-16 (64).
-const SHEET_CHROME_HEIGHT = 16 + 6 + 12 + 64;
+// Every screen's nav row (back / title / trailing action) is a fixed 44px —
+// same height as the GlassButton circles it's built from, no screen adds its
+// own vertical padding around it.
+const HEADER_HEIGHT = 44;
+// Handle bar (16 margin + 6 height) + nav row (44) + sheet's own pt-3 (12) +
+// pb-16 (64).
+const SHEET_CHROME_HEIGHT = 16 + 6 + HEADER_HEIGHT + 12 + 64;
 
 const DEFAULT_DURATION_MINUTES = 5;
 
@@ -60,6 +65,12 @@ function formatDuration(totalMinutes: number) {
   if (hours === 0) return `${minutes} min`;
   if (minutes === 0) return `${hours} hr`;
   return `${hours} hr ${minutes} min`;
+}
+
+// Fills a nav row's back/trailing-action slot when that screen has none, so
+// the title stays centered and every screen's header is the same height.
+function HeaderPlaceholder() {
+  return <div className="h-11 w-11 shrink-0" aria-hidden />;
 }
 
 function SheetOption({
@@ -387,21 +398,24 @@ export default function AddSheet({
   }
 
   // The trailing "Add an option" action reuses the last slot if it's still
-  // empty, rather than stacking a second empty row.
+  // empty, rather than stacking a second empty row. Otherwise it targets an
+  // index one past the end without actually appending anything yet — that
+  // row only gets created in handleLocationSelect once a location is
+  // actually picked, so the poll screen never briefly shows a new, empty
+  // "Location" row while it fades out into the location search screen.
   function handleAddOption() {
     const lastIndex = locations.length - 1;
-    if (locations[lastIndex] === null) {
-      openLocationSearch(lastIndex);
-    } else {
-      setLocations((prev) => [...prev, null]);
-      openLocationSearch(locations.length);
-    }
+    openLocationSearch(locations[lastIndex] === null ? lastIndex : locations.length);
   }
 
   function handleLocationSelect(location: Location) {
     const target = locationSheetTarget;
     if (target === null) return;
-    setLocations((prev) => prev.map((loc, i) => (i === target ? location : loc)));
+    setLocations((prev) =>
+      target < prev.length
+        ? prev.map((loc, i) => (i === target ? location : loc))
+        : [...prev, location],
+    );
     setLocationSheetTarget(null);
     navigateTo("poll");
   }
@@ -467,6 +481,61 @@ export default function AddSheet({
       >
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/30" />
 
+        {/* Lives outside the crossfading, height-measured TouchScroll body
+            below, so it stays put — genuinely sticky — while a screen's own
+            content scrolls beneath it instead of scrolling away with it. */}
+        {screen === "menu" && (
+          <div className="flex items-center justify-between px-4">
+            <HeaderPlaceholder />
+            <span className="font-karla text-nav font-medium text-content-primary">Add</span>
+            <HeaderPlaceholder />
+          </div>
+        )}
+        {screen === "poll" && (
+          <div className="flex items-center justify-between px-4">
+            <GlassButton ariaLabel="Back" onClick={() => navigateTo("menu")}>
+              <CaretLeft size={22} />
+            </GlassButton>
+            <span className="font-karla text-body font-medium text-content-primary">
+              Add poll
+            </span>
+            <GlassButton
+              ariaLabel="Save poll"
+              onClick={handleSavePoll}
+              disabled={!pollValid}
+              style={
+                pollValid
+                  ? { background: "var(--color-brand)", border: "1px solid var(--color-brand)" }
+                  : undefined
+              }
+            >
+              <Check size={22} />
+            </GlassButton>
+          </div>
+        )}
+        {screen === "activity" && (
+          <div className="flex items-center justify-between px-4">
+            <GlassButton ariaLabel="Back" onClick={() => navigateTo("poll")}>
+              <CaretLeft size={22} />
+            </GlassButton>
+            <span className="font-karla text-body font-medium text-content-primary">
+              Add activity
+            </span>
+            <HeaderPlaceholder />
+          </div>
+        )}
+        {screen === "location" && (
+          <div className="flex items-center justify-between px-4">
+            <GlassButton ariaLabel="Back" onClick={() => navigateTo("poll")}>
+              <CaretLeft size={22} />
+            </GlassButton>
+            <span className="font-karla text-body font-medium text-content-primary">
+              Location
+            </span>
+            <HeaderPlaceholder />
+          </div>
+        )}
+
         <TouchScroll
           className="no-scrollbar relative overflow-y-auto transition-[height] ease-[cubic-bezier(0.32,0.72,0,1)]"
           style={{ height: bodyHeight ?? undefined, transitionDuration: `${RESIZE_MS}ms` }}
@@ -477,10 +546,7 @@ export default function AddSheet({
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={screenStyle("menu")}
           >
-            <p className="mb-4 text-center font-karla text-nav font-medium text-content-primary">
-              Add
-            </p>
-            <div className="flex flex-col gap-3 px-4">
+            <div className="flex flex-col gap-3 px-4 pt-4">
               <SheetOption icon={<Lightning size={20} weight="fill" />} title="Activity" />
               <SheetOption
                 icon={<ListBullets size={20} />}
@@ -497,27 +563,6 @@ export default function AddSheet({
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={screenStyle("poll")}
           >
-            <div className="flex items-center justify-between px-4">
-              <GlassButton ariaLabel="Back" onClick={() => navigateTo("menu")}>
-                <CaretLeft size={22} />
-              </GlassButton>
-              <span className="font-karla text-body font-medium text-content-primary">
-                Add poll
-              </span>
-              <GlassButton
-                ariaLabel="Save poll"
-                onClick={handleSavePoll}
-                disabled={!pollValid}
-                style={
-                  pollValid
-                    ? { background: "var(--color-brand)", border: "1px solid var(--color-brand)" }
-                    : undefined
-                }
-              >
-                <Check size={22} />
-              </GlassButton>
-            </div>
-
             <div className="flex flex-col gap-4 px-4 pt-4">
               <input
                 type="text"
@@ -615,16 +660,6 @@ export default function AddSheet({
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={screenStyle("activity")}
           >
-            <div className="flex items-center justify-between px-4">
-              <GlassButton ariaLabel="Back" onClick={() => navigateTo("poll")}>
-                <CaretLeft size={22} />
-              </GlassButton>
-              <span className="font-karla text-body font-medium text-content-primary">
-                Add activity
-              </span>
-              <div className="h-11 w-11 shrink-0" aria-hidden />
-            </div>
-
             <div className="flex flex-col gap-4 px-4 pt-4">
               <input
                 type="text"
@@ -736,7 +771,6 @@ export default function AddSheet({
               onQueryChange={setLocationQuery}
               excludeIds={locationExcludeIds}
               onSelect={handleLocationSelect}
-              onBack={() => navigateTo("poll")}
               inputRef={locationInputRef}
             />
           </div>
