@@ -175,7 +175,7 @@ function LocationRow({
       <button
         type="button"
         onClick={onEdit}
-        className="flex w-full items-center gap-3 px-4 py-4 text-left"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
         <span className="flex-1 font-karla text-body text-content-secondary">Location</span>
         <MapPin size={20} className="shrink-0 text-content-secondary" />
@@ -183,7 +183,7 @@ function LocationRow({
     );
   }
   return (
-    <div className="flex w-full items-center gap-3 px-4 py-4">
+    <div className="flex w-full items-center gap-3 px-4 py-3">
       <button type="button" onClick={onEdit} className="flex flex-1 flex-col text-left">
         <span className="font-karla text-body font-medium text-content-primary">
           {location.name}
@@ -593,7 +593,7 @@ export default function AddSheet({
                 <button
                   type="button"
                   onClick={handleAddOption}
-                  className="flex w-full items-center gap-3 px-4 py-4 text-left"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left"
                 >
                   <span className="flex-1 font-karla text-body text-content-secondary">
                     Add an option
@@ -653,7 +653,7 @@ export default function AddSheet({
               <button
                 type="button"
                 onClick={() => navigateTo("activity")}
-                className="flex w-full items-center justify-between rounded-card bg-card-light px-4 py-4 text-left"
+                className="flex w-full items-center justify-between rounded-card bg-card-light px-4 py-3 text-left"
               >
                 <span className="font-karla text-body font-medium text-content-primary">
                   Activity details

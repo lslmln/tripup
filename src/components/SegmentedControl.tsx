@@ -65,7 +65,7 @@ export default function SegmentedControl({
             setActiveIndex(i);
             onChange?.(i);
           }}
-          className={`relative z-10 flex-1 rounded-full py-2 text-center font-karla text-subtitle font-medium transition-colors duration-150 ${
+          className={`relative z-10 flex-1 rounded-full py-3 text-center font-karla text-subtitle font-medium transition-colors duration-150 ${
             activeIndex === i
               ? "text-content-primary"
               : "text-content-secondary"

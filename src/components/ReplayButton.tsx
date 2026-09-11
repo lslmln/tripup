@@ -20,7 +20,7 @@ export default function ReplayButton() {
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/";
       }}
-      className="flex shrink-0 items-center gap-2 rounded-full bg-neutral-900 px-4 py-2.5 font-karla text-sm font-medium text-white shadow-lg transition hover:bg-neutral-800"
+      className="flex shrink-0 items-center gap-2 rounded-full bg-neutral-900 px-4 py-3 font-karla text-sm font-medium text-white shadow-lg transition hover:bg-neutral-800 active:scale-[0.97]"
     >
       <ArrowCounterClockwise size={16} weight="bold" />
       Refresh
