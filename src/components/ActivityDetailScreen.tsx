@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   CaretLeft,
   CaretRight,
@@ -55,7 +56,20 @@ export default function ActivityDetailScreen({
     findItem(getStoredTimeline(trip.id, fallbackTimeline), activityId),
   );
   const [tripMembers] = useState<Member[]>(() => getStoredMembers(trip.id, fallbackMembers));
-  const [voteSheetOpen, setVoteSheetOpen] = useState(false);
+  // A vote notification links here with "?openPoll=1" so tapping it doesn't
+  // just land on the activity but opens the poll itself. useSearchParams
+  // (not window.location) — its value is driven by the router's own state,
+  // which stays in sync with the URL from this component's very first
+  // render during a client-side navigation; window.location.search proved
+  // unreliable that early, still reading the *previous* page's query
+  // string. Read straight into the initial state (rather than an effect
+  // that flips it after mount) to avoid a spurious extra render. Only
+  // meaningful for a poll that's still pending; a resolved one has no vote
+  // sheet to open.
+  const searchParams = useSearchParams();
+  const [voteSheetOpen, setVoteSheetOpen] = useState(
+    () => searchParams.get("openPoll") === "1" && item?.pending === true,
+  );
   const [now, setNow] = useState(() => Date.now());
   const [activeTab, setActiveTab] = useState(0);
   const [billSheetOpen, setBillSheetOpen] = useState(false);

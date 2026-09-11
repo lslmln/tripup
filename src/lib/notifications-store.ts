@@ -8,6 +8,10 @@ export type PendingNotification = {
   icon: "vote" | "payment";
   title: string;
   message: string;
+  // Where tapping the notification (as opposed to swiping it away) takes
+  // the user — a vote notification opens the poll it's about, a payment
+  // notification opens the trip's Transactions tab.
+  href?: string;
 };
 
 type Listener = (notification: PendingNotification) => void;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Empty } from "@phosphor-icons/react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
@@ -48,7 +49,41 @@ export default function TripDetailScreen({
   fallbackMembers: Member[];
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  // Tapping a payment notification lands here with "?tab=transactions".
+  // useSearchParams (not window.location) is what's actually in sync with
+  // the URL from this component's very first render during a client-side
+  // navigation — window.location.search proved unreliable that early,
+  // still reading the *previous* page's query string. Seeds the initial
+  // state directly for a fresh mount (landing here from elsewhere), but a
+  // notification tapped while *already* sitting on this same "/trip/[id]"
+  // route only changes the query string — no remount, so the effect below
+  // also handles that case explicitly.
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() =>
+    searchParams.get("tab") === "transactions" ? 2 : 0,
+  );
+  // SegmentedControl is uncontrolled (see its own comment) and only reads
+  // its initialIndex once, at its own mount — bumping this key forces it to
+  // remount and resync whenever a notification jumps the tab out from under
+  // it, without also remounting (and losing its slide animation) on every
+  // ordinary in-page tab click, which never touches this key.
+  const [tabSyncKey, setTabSyncKey] = useState(0);
+  useEffect(() => {
+    // Guarded on activeTab, not just the query param, so this only fires
+    // for an actual external jump (a notification tapped while this exact
+    // route was already mounted) — the useState initializer above already
+    // covers a fresh mount, and re-running this unconditionally would
+    // force a pointless extra SegmentedControl remount right after it.
+    if (searchParams.get("tab") === "transactions" && activeTab !== 2) {
+      // Genuinely syncing with the router's state after mount, not
+      // something derivable during render — see the useState above for the
+      // mount-time case this doesn't cover.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab(2);
+      setTabSyncKey((k) => k + 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   // All three tabs share one scrollable element (content just swaps), so
   // switching away from a tall Timeline scroll position to a much shorter
   // Balance/Transactions view clamps scrollTop down — switching back with
@@ -111,6 +146,7 @@ export default function TripDetailScreen({
         member.name,
         option.name,
         (index + 1) * POLL_VOTE_NOTIFICATION_INTERVAL_MS,
+        `/trip/${trip.id}/activity/${item.id}?openPoll=1`,
       );
     });
   }
@@ -229,6 +265,7 @@ export default function TripDetailScreen({
           icon: "payment",
           title: "Payment received",
           message: `${member?.name ?? "Someone"} paid you $${formatMoney(debtor.amount)}`,
+          href: `/trip/${trip.id}?tab=transactions`,
         },
         0,
       );
@@ -244,7 +281,11 @@ export default function TripDetailScreen({
         <StatusBar light time="6:45" />
         <DetailHeader tripId={trip.id} title={trip.name} avatar={trip.image} />
         <div className="py-3">
-          <SegmentedControl onChange={handleTabChange} />
+          <SegmentedControl
+            key={tabSyncKey}
+            initialIndex={activeTab}
+            onChange={handleTabChange}
+          />
         </div>
       </div>
       <div className="relative min-h-0 flex-1">

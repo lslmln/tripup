@@ -20,14 +20,20 @@ const EASE = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 // transition) to produce visible animation here.
 export default function SegmentedControl({
   tabs = DEFAULT_TABS,
+  initialIndex = 0,
   onChange,
 }: {
   tabs?: string[];
+  initialIndex?: number;
   onChange?: (index: number) => void;
 }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Uncontrolled — initialIndex only seeds the very first render (e.g.
+  // landing here from a notification that deep-links to a specific tab),
+  // same as this component already lets internal clicks drive its own
+  // highlight without a parent-controlled value.
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const pillRef = useRef<HTMLDivElement>(null);
-  const prevIndex = useRef(0);
+  const prevIndex = useRef(initialIndex);
 
   useLayoutEffect(() => {
     const el = pillRef.current;
@@ -49,7 +55,7 @@ export default function SegmentedControl({
         className="absolute inset-y-1 left-1 rounded-full"
         style={{
           width: `calc((100% - 8px) / ${tabs.length})`,
-          transform: "translateX(0%)",
+          transform: `translateX(${initialIndex * 100}%)`,
           background: "rgba(255, 255, 255, 0.18)",
           boxShadow:
             "0 1px 4px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3)",

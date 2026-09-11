@@ -24,6 +24,10 @@ export function scheduleVoteArrival(
   memberName: string,
   optionName: string,
   delayMs: number,
+  // Tapping the notification opens the poll itself, not just the trip's
+  // timeline — the activity detail page reads this same "?openPoll=1"
+  // convention to auto-open the vote sheet on arrival.
+  href: string,
 ) {
   const id = `vote-${itemId}-${memberId}`;
   if (scheduledIds.has(id)) return;
@@ -32,7 +36,13 @@ export function scheduleVoteArrival(
     scheduledIds.delete(id);
     listeners.forEach((listener) => listener({ itemId, memberId, optionId }));
     scheduleNotification(
-      { id, icon: "vote", title: "New vote", message: `${memberName} voted for ${optionName}` },
+      {
+        id,
+        icon: "vote",
+        title: "New vote",
+        message: `${memberName} voted for ${optionName}`,
+        href,
+      },
       0,
     );
   }, delayMs);

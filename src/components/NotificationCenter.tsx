@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CashRegister, ListBullets } from "@phosphor-icons/react";
 import Notification from "./Notification";
 import { subscribeToNotifications, type PendingNotification } from "@/lib/notifications-store";
@@ -11,6 +12,7 @@ import { subscribeToNotifications, type PendingNotification } from "@/lib/notifi
 export default function NotificationCenter() {
   const [queue, setQueue] = useState<PendingNotification[]>([]);
   const active = queue[0] ?? null;
+  const router = useRouter();
 
   useEffect(() => {
     return subscribeToNotifications((notification) => {
@@ -36,6 +38,7 @@ export default function NotificationCenter() {
       }
       title={active.title}
       message={active.message}
+      onTap={active.href ? () => router.push(active.href!) : undefined}
       onDismiss={dismissActive}
     />
   );
