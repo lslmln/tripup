@@ -26,6 +26,7 @@ import { useScrollEdges } from "@/hooks/useScrollEdges";
 import type { Location } from "@/lib/mock-locations";
 import { mockMembers, type Member } from "@/lib/mock-members";
 import { getStoredMembers } from "@/lib/members-store";
+import { hasCreatedPoll, markPollCreated } from "@/lib/poll-limit-store";
 import {
   formatDateChip,
   formatTimeChip,
@@ -80,18 +81,21 @@ function SheetOption({
   icon,
   title,
   subtitle,
+  disabled,
   onClick,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle?: string;
+  disabled?: boolean;
   onClick?: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-card bg-card-light px-4 py-3 text-left transition-transform duration-150 ease-out active:scale-[0.98]"
+      disabled={disabled}
+      className="flex w-full items-center gap-3 rounded-card bg-card-light px-4 py-3 text-left transition-transform duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-icon-neutral text-content-primary">
         {icon}
@@ -247,6 +251,12 @@ export default function AddSheet({
   // Only trip members are eligible attendees — the same roster the trip's
   // Members screen shows, not the wider candidate pool used to invite people.
   const [tripMembers] = useState<Member[]>(() => getStoredMembers(tripId, mockMembers));
+  // Only one poll per trip per session — "Poll" disables the moment one's
+  // created, and only a full page refresh (which resets the module-scope
+  // store) brings it back. Read once on mount: this component unmounts and
+  // remounts fresh every time the Add sheet opens/closes, so there's no
+  // stale-value risk from skipping a subscription.
+  const [pollAlreadyCreated] = useState(() => hasCreatedPoll(tripId));
   const [attendeeIds, setAttendeeIds] = useState<string[]>(() =>
     tripMembers.map((member) => member.id),
   );
@@ -471,6 +481,7 @@ export default function AddSheet({
   // from the instant the poll is created.
   function handleSavePoll() {
     const pollOptions = locations.filter((loc): loc is Location => loc !== null);
+    markPollCreated(tripId);
     onActivityCreated?.({
       id: `poll-${Date.now()}`,
       type: "meal",
@@ -574,7 +585,12 @@ export default function AddSheet({
               <SheetOption
                 icon={<ListBullets size={20} />}
                 title="Poll"
-                subtitle="When you can't choose where to eat"
+                subtitle={
+                  pollAlreadyCreated
+                    ? "Only one poll at a time"
+                    : "When you can't choose where to eat"
+                }
+                disabled={pollAlreadyCreated}
                 onClick={() => navigateTo("poll")}
               />
             </div>
