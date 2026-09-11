@@ -343,7 +343,12 @@ export default function AddSheet({
 
   // Fade the current screen out, resize the sheet to the target screen's
   // height while both are invisible, then fade the target screen in.
-  function navigateTo(target: Screen) {
+  // onArrive (optional) runs right as the outgoing screen is swapped out —
+  // for state that should only change once that screen is no longer
+  // visible, not the instant navigation starts (see handleLocationSelect:
+  // resetting locationSheetTarget eagerly would change the location list's
+  // exclude filter, and thus its visible rows, mid-fade-out).
+  function navigateTo(target: Screen, onArrive?: () => void) {
     if (target === screen || pendingScreenRef.current) return;
     pendingScreenRef.current = target;
     setFadeDuration(FADE_OUT_MS);
@@ -353,6 +358,7 @@ export default function AddSheet({
       const nextPanel = panelRefFor(target).current;
       if (nextPanel) setBodyHeight(clampToMaxHeight(nextPanel.scrollHeight));
       setScreen(target);
+      onArrive?.();
 
       const t2 = window.setTimeout(() => {
         setFadeDuration(FADE_IN_MS);
@@ -418,13 +424,21 @@ export default function AddSheet({
   function handleLocationSelect(location: Location) {
     const target = locationSheetTarget;
     if (target === null) return;
-    setLocations((prev) =>
-      target < prev.length
-        ? prev.map((loc, i) => (i === target ? location : loc))
-        : [...prev, location],
-    );
-    setLocationSheetTarget(null);
-    navigateTo("poll");
+    // Deferred to onArrive (once the location screen has actually faded
+    // out) rather than set immediately: both changes affect
+    // locationExcludeIds, which the still-fading-out location screen is
+    // still rendering against — updating them eagerly made the visible
+    // results list change (the just-picked place vanishing, or previously
+    // excluded ones reappearing once the target resets to null) mid-fade,
+    // instead of only after the poll screen it's transitioning to takes over.
+    navigateTo("poll", () => {
+      setLocations((prev) =>
+        target < prev.length
+          ? prev.map((loc, i) => (i === target ? location : loc))
+          : [...prev, location],
+      );
+      setLocationSheetTarget(null);
+    });
   }
 
   // Removes the row, except when it's the last one left — then just clear

@@ -33,7 +33,20 @@ export function useScrollEdges(
 
     measure();
     el.addEventListener("scroll", measure, { passive: true });
-    return () => el.removeEventListener("scroll", measure);
+    // The element's own height can itself be mid CSS transition when this
+    // effect runs (AddSheet/PollVoteSheet resize their sheet between
+    // screens with `transition-[height]`): a browser mutates layout
+    // immediately but *animates* the box over that transition, so
+    // clientHeight read synchronously here can be the pre-transition value,
+    // not the settled target — re-measure once it actually finishes.
+    function onTransitionEnd(e: TransitionEvent) {
+      if (e.target === el && e.propertyName === "height") measure();
+    }
+    el.addEventListener("transitionend", onTransitionEnd);
+    return () => {
+      el.removeEventListener("scroll", measure);
+      el.removeEventListener("transitionend", onTransitionEnd);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 

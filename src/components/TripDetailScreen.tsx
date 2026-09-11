@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { CashRegister, Empty, ListBullets } from "@phosphor-icons/react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Empty } from "@phosphor-icons/react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
 import SegmentedControl from "./SegmentedControl";
 import TimelineSection from "./TimelineSection";
 import TouchScroll from "./TouchScroll";
-import Notification from "./Notification";
 import TripGlow from "./TripGlow";
 import GlassSearchBar from "./GlassSearchBar";
 import AddSheet from "./AddSheet";
@@ -22,6 +21,7 @@ import { resolvePollItem } from "@/lib/poll";
 import { computeOwed } from "@/lib/balance";
 import { formatMoney } from "@/lib/bills";
 import { formatClockTime } from "@/lib/format-datetime";
+import { scheduleNotification } from "@/lib/notifications-store";
 
 // There's no real multi-user backend here, so incoming payments are
 // simulated: every debtor still owed gets paid off in full, one at a time,
@@ -33,13 +33,6 @@ const SIMULATED_PAYMENT_INTERVAL_MS = 5000;
 // This just paces the *notifications* about those votes so they read as
 // people responding over time instead of all landing at once.
 const POLL_VOTE_NOTIFICATION_INTERVAL_MS = 5000;
-
-type NotificationData = {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  message: string;
-};
 
 export default function TripDetailScreen({
   trip,
@@ -59,23 +52,6 @@ export default function TripDetailScreen({
   const [transactions, setTransactions] = useState<Transaction[]>(() =>
     getStoredTransactions(trip.id),
   );
-  // The front of the queue IS the active notification — derived, not its
-  // own state — so showing the next one is just shifting the array (from
-  // the dismiss callback below) rather than a separate effect reacting to
-  // queue changes. A payment and a poll vote landing close together queue
-  // up and show one after another instead of one clobbering the other.
-  const [notificationQueue, setNotificationQueue] = useState<NotificationData[]>([]);
-  const activeNotification = notificationQueue[0] ?? null;
-  const voteTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  function enqueueNotification(data: NotificationData) {
-    setNotificationQueue((prev) => [...prev, data]);
-  }
-
-  function dismissActiveNotification() {
-    setNotificationQueue((prev) => prev.slice(1));
-  }
-
   function addTodayItem(item: TimelineItem) {
     setTimeline((prev) => {
       const next = appendToSection(prev, "today", item);
@@ -88,27 +64,27 @@ export default function TripDetailScreen({
   // Every other attendee's vote already exists in item.pollVotes the moment
   // a poll is created (see seedPollVotes) — there's no real second person
   // casting it later. This just staggers when each vote's notification
-  // shows, so it reads as people responding to the poll over time.
+  // shows, so it reads as people responding to the poll over time. Uses the
+  // module-scope notifications-store (not a local setTimeout) so opening
+  // the poll's own detail screen right after creating it — the obvious
+  // next thing to do — doesn't unmount this component and cancel them.
   function schedulePollVoteNotifications(item: TimelineItem) {
     if (!item.pending || !item.pollVotes || !item.pollOptions) return;
     const voterIds = Object.keys(item.pollVotes);
     voterIds.forEach((memberId, index) => {
-      const timeout = setTimeout(
-        () => {
-          const member = memberById(memberId);
-          const optionId = item.pollVotes?.[memberId];
-          const option = item.pollOptions?.find((o) => o.id === optionId);
-          if (!member || !option) return;
-          enqueueNotification({
-            id: `vote-${item.id}-${memberId}`,
-            icon: <ListBullets size={20} weight="fill" />,
-            title: "New vote",
-            message: `${member.name} voted for ${option.name}`,
-          });
+      const member = memberById(memberId);
+      const optionId = item.pollVotes?.[memberId];
+      const option = item.pollOptions?.find((o) => o.id === optionId);
+      if (!member || !option) return;
+      scheduleNotification(
+        {
+          id: `vote-${item.id}-${memberId}`,
+          icon: "vote",
+          title: "New vote",
+          message: `${member.name} voted for ${option.name}`,
         },
         (index + 1) * POLL_VOTE_NOTIFICATION_INTERVAL_MS,
       );
-      voteTimeoutsRef.current.push(timeout);
     });
   }
 
@@ -193,35 +169,23 @@ export default function TripDetailScreen({
         at: Date.now(),
       };
       setTransactions(addStoredTransaction(trip.id, transaction));
-      enqueueNotification({
-        id: `payment-${transaction.id}`,
-        icon: <CashRegister size={20} weight="fill" />,
-        title: "Payment received",
-        message: `${member?.name ?? "Someone"} paid you $${formatMoney(debtor.amount)}`,
-      });
+      scheduleNotification(
+        {
+          id: `payment-${transaction.id}`,
+          icon: "payment",
+          title: "Payment received",
+          message: `${member?.name ?? "Someone"} paid you $${formatMoney(debtor.amount)}`,
+        },
+        0,
+      );
     }, SIMULATED_PAYMENT_INTERVAL_MS);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextDebtorId]);
 
-  useEffect(() => {
-    return () => {
-      voteTimeoutsRef.current.forEach(clearTimeout);
-    };
-  }, []);
-
   return (
     <div className="relative flex h-full w-full flex-col bg-background-detail">
       <TripGlow />
-      {activeNotification && (
-        <Notification
-          key={activeNotification.id}
-          icon={activeNotification.icon}
-          title={activeNotification.title}
-          message={activeNotification.message}
-          onDismiss={dismissActiveNotification}
-        />
-      )}
       <div className="relative z-10 shrink-0">
         <StatusBar light time="6:45" />
         <DetailHeader tripId={trip.id} title={trip.name} avatar={trip.image} />

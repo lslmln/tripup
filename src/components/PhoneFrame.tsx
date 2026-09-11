@@ -1,5 +1,6 @@
 import SimulatorTouch from "./SimulatorTouch";
 import PageTransition from "./PageTransition";
+import NotificationCenter from "./NotificationCenter";
 
 // Measured from /public/iphone-frame.png (1800x3680 source), which is a
 // real device-mockup image with a transparent, rounded-corner screen cutout.
@@ -39,6 +40,7 @@ export default function PhoneFrame({ children }: { children: React.ReactNode }) 
             <PageTransition>{children}</PageTransition>
           </SimulatorTouch>
         </div>
+        <NotificationCenter />
       </div>
 
       {/* eslint-disable-next-line @next/next/no-img-element */}

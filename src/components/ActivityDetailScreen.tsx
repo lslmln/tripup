@@ -26,6 +26,7 @@ import type { Member } from "@/lib/mock-members";
 import type { TimelineItem, TimelineSection } from "@/lib/mock-timeline";
 
 const PENDING_COLOR = "#FFDA48";
+const POLL_EMOJI = "🗳️";
 const DETAIL_TABS = ["Details", "Bill"];
 // This whole prototype's activities are food outings, so every bill sits
 // under one fixed category — no separate category picker to build.
@@ -109,6 +110,11 @@ export default function ActivityDetailScreen({
   const attendees = tripMembers.filter((member) => item.attendeeIds?.includes(member.id));
   const remainingMs = item.pollDeadline ? item.pollDeadline - now : null;
   const myVote = item.pollVotes?.[CURRENT_USER_ID] ?? null;
+  // Once Ari herself has answered, there's nothing left for her to act on
+  // here — the header icon and Location card both drop the yellow "you
+  // need to do something" treatment even though the poll is still open for
+  // everyone else (item.pending stays true until it actually resolves).
+  const answered = item.pending && myVote !== null;
   const leadingOption =
     myVote !== null && item.pollOptions ? pickPollWinner(item.pollOptions, item.pollVotes) : null;
 
@@ -162,7 +168,11 @@ export default function ActivityDetailScreen({
         <div className="flex items-center gap-3 px-4 pb-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-card-light text-[18px]">
             {item.pending ? (
-              <Warning size={20} weight="fill" style={{ color: PENDING_COLOR }} />
+              answered ? (
+                POLL_EMOJI
+              ) : (
+                <Warning size={20} weight="fill" style={{ color: PENDING_COLOR }} />
+              )
             ) : (
               item.emoji
             )}
@@ -188,9 +198,15 @@ export default function ActivityDetailScreen({
             </h2>
 
             {item.pending ? (
-              <div
-                className="flex items-center justify-between gap-3 rounded-card px-4 py-3"
-                style={{ background: `color-mix(in srgb, ${PENDING_COLOR} 10%, transparent)` }}
+              <button
+                type="button"
+                onClick={() => setVoteSheetOpen(true)}
+                className="flex w-full items-center justify-between gap-3 rounded-card px-4 py-3 text-left"
+                style={{
+                  background: answered
+                    ? "var(--color-card-light)"
+                    : `color-mix(in srgb, ${PENDING_COLOR} 10%, transparent)`,
+                }}
               >
                 <div className="flex shrink-0 flex-col">
                   <span className="font-karla text-body font-medium text-content-primary">
@@ -201,11 +217,7 @@ export default function ActivityDetailScreen({
                   </span>
                 </div>
                 {leadingOption ? (
-                  <button
-                    type="button"
-                    onClick={() => setVoteSheetOpen(true)}
-                    className="flex min-w-0 flex-1 items-center justify-end gap-1"
-                  >
+                  <div className="flex min-w-0 flex-1 items-center justify-end gap-1">
                     <div className="flex min-w-0 flex-col items-end">
                       <span className="w-full truncate text-right font-karla text-body font-medium text-content-primary">
                         {leadingOption.name}
@@ -215,18 +227,11 @@ export default function ActivityDetailScreen({
                       </span>
                     </div>
                     <CaretRight size={16} className="shrink-0 text-content-secondary" />
-                  </button>
+                  </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setVoteSheetOpen(true)}
-                    aria-label="Answer poll"
-                    className="shrink-0"
-                  >
-                    <CaretRight size={16} className="text-content-secondary" />
-                  </button>
+                  <CaretRight size={16} className="shrink-0 text-content-secondary" />
                 )}
-              </div>
+              </button>
             ) : (
               <div className="flex items-center gap-3 rounded-card bg-card-light px-4 py-4">
                 <div className="flex flex-1 flex-col">
