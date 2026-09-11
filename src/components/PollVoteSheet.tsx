@@ -6,6 +6,7 @@ import SheetScrollFade from "./SheetScrollFade";
 import TouchScroll from "./TouchScroll";
 import { formatCountdown, votersForOption } from "@/lib/poll";
 import { CURRENT_USER_ID } from "@/lib/mock-members";
+import { useScrollEdges } from "@/hooks/useScrollEdges";
 import type { Member } from "@/lib/mock-members";
 import type { TimelineItem } from "@/lib/mock-timeline";
 
@@ -55,6 +56,7 @@ export default function PollVoteSheet({
   const sheetRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Mirrors AddMemberSheet's entrance on the way out.
   useLayoutEffect(() => {
@@ -94,6 +96,8 @@ export default function PollVoteSheet({
     setBodyHeight(Math.min(contentHeight, max));
   }, [resultsVisible]);
 
+  const { atTop, atBottom } = useScrollEdges(scrollRef, [resultsVisible, bodyHeight]);
+
   function memberById(id: string) {
     return tripMembers.find((member) => member.id === id) ?? null;
   }
@@ -122,6 +126,7 @@ export default function PollVoteSheet({
 
         <div className="relative">
           <TouchScroll
+            ref={scrollRef}
             className="no-scrollbar overflow-y-auto transition-[height] duration-200 ease-out"
             style={{ height: bodyHeight ?? undefined }}
           >
@@ -221,7 +226,7 @@ export default function PollVoteSheet({
                 <button
                   type="button"
                   onClick={() => setClosing(true)}
-                  className="w-full rounded-full py-3 text-center font-karla text-body font-semibold"
+                  className="mt-3 w-full rounded-full py-3 text-center font-karla text-body font-semibold"
                   style={{ background: "var(--color-brand)", color: "#fff" }}
                 >
                   View votes
@@ -234,7 +239,7 @@ export default function PollVoteSheet({
               <div className="h-8 shrink-0" aria-hidden />
             </div>
           </TouchScroll>
-          <SheetScrollFade />
+          <SheetScrollFade showTop={!atTop} showBottom={!atBottom} />
         </div>
       </div>
     </>

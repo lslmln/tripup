@@ -7,6 +7,7 @@ import StatusBar from "./StatusBar";
 import SheetScrollFade from "./SheetScrollFade";
 import TouchScroll from "./TouchScroll";
 import { glassStyle } from "./glass";
+import { useScrollEdges } from "@/hooks/useScrollEdges";
 import { mockCandidates, type Candidate } from "@/lib/mock-candidates";
 
 const DURATION_MS = 300;
@@ -23,6 +24,8 @@ export default function AddMemberSheet({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const backdropRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { atTop, atBottom } = useScrollEdges(scrollRef);
 
   // Mirrors AddSheet's entrance (sheet-enter/backdrop-enter's @starting-style
   // slide + fade) on the way out: play the reverse transform/opacity
@@ -95,7 +98,7 @@ export default function AddMemberSheet({
         </div>
 
         <div className="relative min-h-0 flex-1">
-          <TouchScroll className="no-scrollbar h-full overflow-y-auto pt-3 pb-23">
+          <TouchScroll ref={scrollRef} className="no-scrollbar h-full overflow-y-auto pt-3 pb-23">
             <div className="divide-y divide-border-primary">
               {mockCandidates.map((candidate) => {
                 const checked = selectedIds.includes(candidate.id);
@@ -130,7 +133,7 @@ export default function AddMemberSheet({
               })}
             </div>
           </TouchScroll>
-          <SheetScrollFade />
+          <SheetScrollFade showTop={!atTop} showBottom={!atBottom} />
         </div>
 
         <div

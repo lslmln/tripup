@@ -1,20 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 // Mimics touch-drag scrolling like the iOS Simulator: dragging moves the
 // content directly under the pointer, and the mouse wheel does nothing —
 // you have to "grab" the screen the way you would a real device.
-export default function TouchScroll({
-  children,
-  className,
-  style,
-}: {
+const TouchScroll = forwardRef<HTMLDivElement, {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
-}) {
+}>(function TouchScroll({ children, className, style }, forwardedRef) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  useImperativeHandle(forwardedRef, () => scrollRef.current as HTMLDivElement);
   const drag = useRef<{ startY: number; startScrollTop: number; dragging: boolean } | null>(
     null,
   );
@@ -80,4 +77,6 @@ export default function TouchScroll({
       {children}
     </div>
   );
-}
+});
+
+export default TouchScroll;

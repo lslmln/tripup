@@ -6,6 +6,7 @@ import GlassButton from "./GlassButton";
 import StatusBar from "./StatusBar";
 import SheetScrollFade from "./SheetScrollFade";
 import TouchScroll from "./TouchScroll";
+import { useScrollEdges } from "@/hooks/useScrollEdges";
 import { sanitizeAmountInput, splitShare, formatMoney, type Bill } from "@/lib/bills";
 import type { Member } from "@/lib/mock-members";
 
@@ -35,6 +36,8 @@ export default function AddBillSheet({
   );
   const backdropRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { atTop, atBottom } = useScrollEdges(scrollRef);
 
   // Mirrors AddMemberSheet/PollVoteSheet's entrance on the way out.
   useLayoutEffect(() => {
@@ -109,7 +112,7 @@ export default function AddBillSheet({
         </div>
 
         <div className="relative min-h-0 flex-1">
-          <TouchScroll className="no-scrollbar h-full overflow-y-auto">
+          <TouchScroll ref={scrollRef} className="no-scrollbar h-full overflow-y-auto">
             <div className="flex flex-col gap-4 px-4 pt-3 pb-3">
               <input
                 type="text"
@@ -188,7 +191,7 @@ export default function AddBillSheet({
               <div className="h-8 shrink-0" aria-hidden />
             </div>
           </TouchScroll>
-          <SheetScrollFade />
+          <SheetScrollFade showTop={!atTop} showBottom={!atBottom} />
         </div>
       </div>
     </>

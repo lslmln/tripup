@@ -22,6 +22,7 @@ import LocationSearchPanel from "./LocationSearchPanel";
 import DurationPickerSheet from "./DurationPickerSheet";
 import DateTimeFieldEditor from "./DateTimeFieldEditor";
 import { glassStyle } from "./glass";
+import { useScrollEdges } from "@/hooks/useScrollEdges";
 import type { Location } from "@/lib/mock-locations";
 import { mockMembers, type Member } from "@/lib/mock-members";
 import { getStoredMembers } from "@/lib/members-store";
@@ -271,6 +272,7 @@ export default function AddSheet({
   const locationInputRef = useRef<HTMLInputElement>(null);
   const pendingScreenRef = useRef<Screen | null>(null);
   const timeoutsRef = useRef<number[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   function panelRefFor(s: Screen) {
     if (s === "menu") return menuPanelRef;
@@ -329,6 +331,8 @@ export default function AddSheet({
     const activePanel = panelRefFor(screen).current;
     if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
   }, [screen, locationsSignature, toggles.limitDuration, activeDateField, locationQuery]);
+
+  const { atTop, atBottom } = useScrollEdges(scrollRef, [screen, bodyHeight]);
 
   // Focus the location search input once its screen has finished fading in.
   useEffect(() => {
@@ -541,6 +545,7 @@ export default function AddSheet({
 
         <div className="relative">
         <TouchScroll
+          ref={scrollRef}
           className="no-scrollbar relative overflow-y-auto transition-[height] ease-[cubic-bezier(0.32,0.72,0,1)]"
           style={{ height: bodyHeight ?? undefined, transitionDuration: `${RESIZE_MS}ms` }}
         >
@@ -777,7 +782,7 @@ export default function AddSheet({
             />
           </div>
         </TouchScroll>
-        <SheetScrollFade />
+        <SheetScrollFade showTop={!atTop} showBottom={!atBottom} />
         </div>
 
         {/* Floats near the sheet's own bottom edge, same as AddMemberSheet's
