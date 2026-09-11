@@ -19,19 +19,14 @@ import type { TimelineItem, TimelineSection as TimelineSectionType } from "@/lib
 import type { Transaction } from "@/lib/transactions";
 import { appendToSection, getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
-import { addStoredTransaction, getStoredTransactions } from "@/lib/transactions-store";
+import { getStoredTransactions } from "@/lib/transactions-store";
 import { resolvePollItem, seedPollVotes } from "@/lib/poll";
 import { computeOwed } from "@/lib/balance";
 import { formatMoney } from "@/lib/bills";
 import { formatClockTime } from "@/lib/format-datetime";
-import { scheduleNotification } from "@/lib/notifications-store";
+import { subscribeToPayments } from "@/lib/payments-store";
 import { scheduleVoteArrival, subscribeToPollVoteArrivals } from "@/lib/poll-votes-store";
 
-// There's no real multi-user backend here, so incoming payments are
-// simulated: every debtor still owed gets paid off in full, one at a time,
-// this many ms apart — standing in for other members settling up on their
-// own end and the notification for each arriving in turn.
-const SIMULATED_PAYMENT_INTERVAL_MS = 5000;
 // Every other attendee's poll vote is simulated — this paces how long after
 // a poll's created each one's vote (and its notification) actually lands,
 // so the poll's own vote counts/bars and the "so-and-so voted" notifications
@@ -220,59 +215,24 @@ export default function TripDetailScreen({
 
   // Every bill's payer is the current user, so this is exactly what every
   // other trip member still owes, aggregated across every activity's bills.
-  // Memoized so the payment-chain effect below only re-fires when the
-  // underlying timeline/transactions actually change, not on every render.
   const owed = useMemo(() => computeOwed(timeline, transactions), [timeline, transactions]);
   const totalOwed = owed.reduce((sum, entry) => sum + entry.amount, 0);
 
   const { atTop, atBottom } = useScrollEdges(scrollRef, [activeTab, timeline, transactions]);
 
-  // Real payments come from other trip members' own devices, not anything
-  // Ari does here — this simulates them arriving one at a time, spaced
-  // SIMULATED_PAYMENT_INTERVAL_MS apart, so the notification and
-  // Balance/Transactions flow are demonstrable without a real backend.
-  // Settling the first debtor removes them from `owed`, which re-triggers
-  // this effect and schedules the next one — a self-perpetuating chain
-  // rather than an explicit queue.
-  //
-  // Depends on just the first debtor's id, not the whole `owed` array:
-  // `owed` gets a brand-new array reference from useMemo on every unrelated
-  // timeline/transaction change (a poll auto-resolving, say), and reacting
-  // to that reference would cancel-and-reschedule an in-flight payment's
-  // countdown for no reason. A stable primitive dependency also means this
-  // effect's cleanup can safely clear its own timeout on every re-run — the
-  // usual React pattern — without that happening spuriously; without it,
-  // React 18 Strict Mode's dev-only mount→cleanup→remount replay cancels
-  // the timer on the simulated cleanup and never reschedules it, since
-  // there'd be nothing left to signal that the "in-flight" timer is gone.
-  const nextDebtorId = owed[0]?.memberId ?? null;
+  // Payments themselves are scheduled the moment a bill's added (see
+  // ActivityDetailScreen's saveBill + payments-store.ts) — not here, since
+  // a bill is added from the activity detail screen and the countdown has
+  // to keep running even if this screen isn't mounted to see it start.
+  // This just mirrors each arrival into local state so Balance/Transactions
+  // update live for a screen that *is* currently mounted, the same way
+  // poll-vote arrivals already do below.
   useEffect(() => {
-    if (!nextDebtorId) return;
-    const debtor = owed.find((entry) => entry.memberId === nextDebtorId);
-    if (!debtor) return;
-    const member = memberById(debtor.memberId);
-    const timer = setTimeout(() => {
-      const transaction: Transaction = {
-        id: `txn-${Date.now()}`,
-        memberId: debtor.memberId,
-        amount: debtor.amount,
-        at: Date.now(),
-      };
-      setTransactions(addStoredTransaction(trip.id, transaction));
-      scheduleNotification(
-        {
-          id: `payment-${transaction.id}`,
-          icon: "payment",
-          title: "Payment received",
-          message: `${member?.name ?? "Someone"} paid you $${formatMoney(debtor.amount)}`,
-          href: `/trip/${trip.id}?tab=transactions`,
-        },
-        0,
-      );
-    }, SIMULATED_PAYMENT_INTERVAL_MS);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nextDebtorId]);
+    return subscribeToPayments(({ tripId, transaction }) => {
+      if (tripId !== trip.id) return;
+      setTransactions((prev) => [transaction, ...prev]);
+    });
+  }, [trip.id]);
 
   return (
     <div className="relative flex h-full w-full flex-col bg-background-detail">

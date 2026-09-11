@@ -23,6 +23,7 @@ import { getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
 import { formatCountdown, pickPollWinner, resolvePollItem } from "@/lib/poll";
 import { subscribeToPollVoteArrivals } from "@/lib/poll-votes-store";
+import { schedulePayment, SIMULATED_PAYMENT_DELAY_MS } from "@/lib/payments-store";
 import { CURRENT_USER_ID } from "@/lib/mock-members";
 import { formatMoney, splitShare, type Bill } from "@/lib/bills";
 import type { Trip } from "@/lib/mock-trips";
@@ -177,6 +178,26 @@ export default function ActivityDetailScreen({
       ...item,
       bills: isEdit ? existing.map((b) => (b.id === bill.id ? bill : b)) : [...existing, bill],
     });
+    // Each split member (other than whoever paid) gets simulated paying
+    // their share back, staggered SIMULATED_PAYMENT_DELAY_MS apart, timed
+    // from right now — not editing an existing bill, since this prototype
+    // has no notion of adjusting a payment schedule already in flight.
+    if (!isEdit) {
+      const share = splitShare(bill.amount, bill.splitWith.length);
+      const debtorIds = bill.splitWith.filter((id) => id !== bill.paidBy);
+      debtorIds.forEach((memberId, index) => {
+        const member = tripMembers.find((m) => m.id === memberId);
+        if (!member) return;
+        schedulePayment(
+          trip.id,
+          bill.id,
+          memberId,
+          member.name,
+          share,
+          (index + 1) * SIMULATED_PAYMENT_DELAY_MS,
+        );
+      });
+    }
   }
 
   function openAddBill() {
