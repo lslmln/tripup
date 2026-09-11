@@ -11,7 +11,7 @@ import type { Transaction } from "./transactions";
 // so the countdown has to keep running regardless of which screen the user
 // is on afterward, the same way poll-vote arrivals already do (see
 // poll-votes-store.ts).
-export const SIMULATED_PAYMENT_DELAY_MS = 5000;
+export const SIMULATED_PAYMENT_DELAY_MS = 15000;
 
 export type PaymentArrival = { tripId: string; transaction: Transaction };
 
