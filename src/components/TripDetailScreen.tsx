@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Empty } from "@phosphor-icons/react";
+import { CashRegister, Empty, ListBullets } from "@phosphor-icons/react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
 import SegmentedControl from "./SegmentedControl";
 import TimelineSection from "./TimelineSection";
 import TouchScroll from "./TouchScroll";
-import TransactionNotification from "./TransactionNotification";
+import Notification from "./Notification";
 import TripGlow from "./TripGlow";
 import GlassSearchBar from "./GlassSearchBar";
 import AddSheet from "./AddSheet";
@@ -28,7 +28,18 @@ import { formatClockTime } from "@/lib/format-datetime";
 // this many ms apart — standing in for other members settling up on their
 // own end and the notification for each arriving in turn.
 const SIMULATED_PAYMENT_INTERVAL_MS = 5000;
-const NOTIFICATION_AUTO_DISMISS_MS = 6000;
+// Every other attendee's poll vote is already seeded the instant a poll is
+// created (see seedPollVotes) — the vote data itself doesn't trickle in.
+// This just paces the *notifications* about those votes so they read as
+// people responding over time instead of all landing at once.
+const POLL_VOTE_NOTIFICATION_INTERVAL_MS = 5000;
+
+type NotificationData = {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  message: string;
+};
 
 export default function TripDetailScreen({
   trip,
@@ -48,16 +59,56 @@ export default function TripDetailScreen({
   const [transactions, setTransactions] = useState<Transaction[]>(() =>
     getStoredTransactions(trip.id),
   );
-  const [notification, setNotification] = useState<{ memberName: string; amount: number } | null>(
-    null,
-  );
-  const paymentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The front of the queue IS the active notification — derived, not its
+  // own state — so showing the next one is just shifting the array (from
+  // the dismiss callback below) rather than a separate effect reacting to
+  // queue changes. A payment and a poll vote landing close together queue
+  // up and show one after another instead of one clobbering the other.
+  const [notificationQueue, setNotificationQueue] = useState<NotificationData[]>([]);
+  const activeNotification = notificationQueue[0] ?? null;
+  const voteTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  function enqueueNotification(data: NotificationData) {
+    setNotificationQueue((prev) => [...prev, data]);
+  }
+
+  function dismissActiveNotification() {
+    setNotificationQueue((prev) => prev.slice(1));
+  }
 
   function addTodayItem(item: TimelineItem) {
     setTimeline((prev) => {
       const next = appendToSection(prev, "today", item);
       setStoredTimeline(trip.id, next);
       return next;
+    });
+    schedulePollVoteNotifications(item);
+  }
+
+  // Every other attendee's vote already exists in item.pollVotes the moment
+  // a poll is created (see seedPollVotes) — there's no real second person
+  // casting it later. This just staggers when each vote's notification
+  // shows, so it reads as people responding to the poll over time.
+  function schedulePollVoteNotifications(item: TimelineItem) {
+    if (!item.pending || !item.pollVotes || !item.pollOptions) return;
+    const voterIds = Object.keys(item.pollVotes);
+    voterIds.forEach((memberId, index) => {
+      const timeout = setTimeout(
+        () => {
+          const member = memberById(memberId);
+          const optionId = item.pollVotes?.[memberId];
+          const option = item.pollOptions?.find((o) => o.id === optionId);
+          if (!member || !option) return;
+          enqueueNotification({
+            id: `vote-${item.id}-${memberId}`,
+            icon: <ListBullets size={20} weight="fill" />,
+            title: "New vote",
+            message: `${member.name} voted for ${option.name}`,
+          });
+        },
+        (index + 1) * POLL_VOTE_NOTIFICATION_INTERVAL_MS,
+      );
+      voteTimeoutsRef.current.push(timeout);
     });
   }
 
@@ -117,12 +168,24 @@ export default function TripDetailScreen({
   // Settling the first debtor removes them from `owed`, which re-triggers
   // this effect and schedules the next one — a self-perpetuating chain
   // rather than an explicit queue.
+  //
+  // Depends on just the first debtor's id, not the whole `owed` array:
+  // `owed` gets a brand-new array reference from useMemo on every unrelated
+  // timeline/transaction change (a poll auto-resolving, say), and reacting
+  // to that reference would cancel-and-reschedule an in-flight payment's
+  // countdown for no reason. A stable primitive dependency also means this
+  // effect's cleanup can safely clear its own timeout on every re-run — the
+  // usual React pattern — without that happening spuriously; without it,
+  // React 18 Strict Mode's dev-only mount→cleanup→remount replay cancels
+  // the timer on the simulated cleanup and never reschedules it, since
+  // there'd be nothing left to signal that the "in-flight" timer is gone.
+  const nextDebtorId = owed[0]?.memberId ?? null;
   useEffect(() => {
-    if (owed.length === 0 || paymentTimerRef.current !== null) return;
-    const [debtor] = owed;
+    if (!nextDebtorId) return;
+    const debtor = owed.find((entry) => entry.memberId === nextDebtorId);
+    if (!debtor) return;
     const member = memberById(debtor.memberId);
-    paymentTimerRef.current = setTimeout(() => {
-      paymentTimerRef.current = null;
+    const timer = setTimeout(() => {
       const transaction: Transaction = {
         id: `txn-${Date.now()}`,
         memberId: debtor.memberId,
@@ -130,35 +193,33 @@ export default function TripDetailScreen({
         at: Date.now(),
       };
       setTransactions(addStoredTransaction(trip.id, transaction));
-      setNotification({ memberName: member?.name ?? "Someone", amount: debtor.amount });
+      enqueueNotification({
+        id: `payment-${transaction.id}`,
+        icon: <CashRegister size={20} weight="fill" />,
+        title: "Payment received",
+        message: `${member?.name ?? "Someone"} paid you $${formatMoney(debtor.amount)}`,
+      });
     }, SIMULATED_PAYMENT_INTERVAL_MS);
-    // No cleanup here: a re-render while this timer is in flight (e.g. a
-    // new bill changing `owed`) must not cancel a payment already queued —
-    // only unmount should ever clear it (see the effect below).
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [owed]);
+  }, [nextDebtorId]);
 
   useEffect(() => {
     return () => {
-      if (paymentTimerRef.current !== null) clearTimeout(paymentTimerRef.current);
+      voteTimeoutsRef.current.forEach(clearTimeout);
     };
   }, []);
-
-  // Notification auto-dismisses like a real iOS banner if you don't tap it.
-  useEffect(() => {
-    if (!notification) return;
-    const timeout = setTimeout(() => setNotification(null), NOTIFICATION_AUTO_DISMISS_MS);
-    return () => clearTimeout(timeout);
-  }, [notification]);
 
   return (
     <div className="relative flex h-full w-full flex-col bg-background-detail">
       <TripGlow />
-      {notification && (
-        <TransactionNotification
-          memberName={notification.memberName}
-          amount={notification.amount}
-          onDismiss={() => setNotification(null)}
+      {activeNotification && (
+        <Notification
+          key={activeNotification.id}
+          icon={activeNotification.icon}
+          title={activeNotification.title}
+          message={activeNotification.message}
+          onDismiss={dismissActiveNotification}
         />
       )}
       <div className="relative z-10 shrink-0">
