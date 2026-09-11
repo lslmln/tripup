@@ -45,8 +45,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <GlassFilters />
         <MobileUnsupportedNotice />
-        <ReplayButton />
-        <main className="hidden min-h-screen items-center justify-center bg-neutral-200 p-8 md:flex">
+        <main className="hidden min-h-screen items-center justify-center gap-6 bg-neutral-200 p-8 md:flex">
+          <ReplayButton />
           <PhoneFrame>{children}</PhoneFrame>
         </main>
       </body>
