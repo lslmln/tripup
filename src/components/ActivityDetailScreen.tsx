@@ -188,8 +188,11 @@ export default function ActivityDetailScreen({
             </h2>
 
             {item.pending ? (
-              <div className="flex items-center justify-between rounded-card bg-card-light px-4 py-4">
-                <div className="flex flex-col">
+              <div
+                className="flex items-center justify-between gap-3 rounded-card px-4 py-3"
+                style={{ background: `color-mix(in srgb, ${PENDING_COLOR} 10%, transparent)` }}
+              >
+                <div className="flex shrink-0 flex-col">
                   <span className="font-karla text-body font-medium text-content-primary">
                     Timed poll
                   </span>
@@ -201,13 +204,13 @@ export default function ActivityDetailScreen({
                   <button
                     type="button"
                     onClick={() => setVoteSheetOpen(true)}
-                    className="flex items-center gap-1"
+                    className="flex min-w-0 flex-1 items-center justify-end gap-1"
                   >
-                    <div className="flex flex-col items-end">
-                      <span className="font-karla text-body font-medium text-content-primary">
+                    <div className="flex min-w-0 flex-col items-end">
+                      <span className="w-full truncate text-right font-karla text-body font-medium text-content-primary">
                         {leadingOption.name}
                       </span>
-                      <span className="font-karla text-subtitle text-content-secondary">
+                      <span className="w-full truncate text-right font-karla text-subtitle text-content-secondary">
                         {leadingOption.subtitle}
                       </span>
                     </div>
@@ -217,10 +220,10 @@ export default function ActivityDetailScreen({
                   <button
                     type="button"
                     onClick={() => setVoteSheetOpen(true)}
-                    className="font-karla text-body font-medium"
-                    style={{ color: "var(--color-brand)" }}
+                    aria-label="Answer poll"
+                    className="shrink-0"
                   >
-                    Answer
+                    <CaretRight size={16} className="text-content-secondary" />
                   </button>
                 )}
               </div>

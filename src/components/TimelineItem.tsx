@@ -43,6 +43,7 @@ export default function TimelineItem({
       <Link
         href={`/trip/${tripId}/activity/${item.id}`}
         className="flex items-center gap-3 px-4 py-3 transition-transform duration-150 ease-out active:scale-[0.98]"
+        style={{ background: `color-mix(in srgb, ${PENDING_COLOR} 10%, transparent)` }}
       >
         {content}
       </Link>
