@@ -290,7 +290,7 @@ export default function TripDetailScreen({
           aria-hidden
         />
       </div>
-      <GlassSearchBar onAddClick={() => setSheetOpen(true)} />
+      <GlassSearchBar onAddClick={activeTab === 0 ? () => setSheetOpen(true) : undefined} />
       {sheetOpen && (
         <AddSheet
           tripId={trip.id}

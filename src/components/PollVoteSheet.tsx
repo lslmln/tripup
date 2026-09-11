@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import StatusBar from "./StatusBar";
+import SheetScrollFade from "./SheetScrollFade";
 import TouchScroll from "./TouchScroll";
 import { formatCountdown, votersForOption } from "@/lib/poll";
 import { CURRENT_USER_ID } from "@/lib/mock-members";
@@ -119,119 +120,122 @@ export default function PollVoteSheet({
           </div>
         </div>
 
-        <TouchScroll
-          className="no-scrollbar overflow-y-auto transition-[height] duration-200 ease-out"
-          style={{ height: bodyHeight ?? undefined }}
-        >
-          <div ref={contentRef} className="flex flex-col gap-4 px-4 pt-3 pb-3">
-            {creator && (
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={creator.avatar}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full object-cover"
-                />
-                <span className="flex-1 font-karla text-body font-medium text-content-primary">
-                  {creator.name}
+        <div className="relative">
+          <TouchScroll
+            className="no-scrollbar overflow-y-auto transition-[height] duration-200 ease-out"
+            style={{ height: bodyHeight ?? undefined }}
+          >
+            <div ref={contentRef} className="flex flex-col gap-4 px-4 pt-3 pb-3">
+              {creator && (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={creator.avatar}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  />
+                  <span className="flex-1 font-karla text-body font-medium text-content-primary">
+                    {creator.name}
+                  </span>
+                  <span className="font-karla text-body text-content-secondary">Me</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="font-karla text-body font-medium text-content-primary">
+                  {item.pollQuestion}
                 </span>
-                <span className="font-karla text-body text-content-secondary">Me</span>
+                <span
+                  className="font-karla text-subtitle"
+                  style={closed ? undefined : { color: "#FFDA48" }}
+                >
+                  {closed ? "Closed" : item.pollDeadline && formatCountdown(item.pollDeadline - now)}
+                </span>
               </div>
-            )}
 
-            <div className="flex items-center justify-between">
-              <span className="font-karla text-body font-medium text-content-primary">
-                {item.pollQuestion}
-              </span>
-              <span
-                className="font-karla text-subtitle"
-                style={closed ? undefined : { color: "#FFDA48" }}
-              >
-                {closed ? "Closed" : item.pollDeadline && formatCountdown(item.pollDeadline - now)}
-              </span>
-            </div>
+              <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
+                {options.map((option) => {
+                  const voterIds = votersForOption(item.pollVotes, option.id);
+                  const count = voterIds.length;
+                  const pct = totalVotes > 0 ? (count / totalVotes) * 100 : 0;
+                  const showCount = resultsVisible && count > 0;
 
-            <div className="divide-y divide-border-primary overflow-hidden rounded-card bg-card-light">
-              {options.map((option) => {
-                const voterIds = votersForOption(item.pollVotes, option.id);
-                const count = voterIds.length;
-                const pct = totalVotes > 0 ? (count / totalVotes) * 100 : 0;
-                const showCount = resultsVisible && count > 0;
-
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    disabled={closed}
-                    onClick={() => onVote(option.id)}
-                    className="flex w-full flex-col gap-2 px-4 py-3 text-left disabled:cursor-default"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Radio selected={myVote === option.id} />
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="font-karla text-body font-medium text-content-primary">
-                          {option.name}
-                        </span>
-                        <span className="truncate font-karla text-subtitle text-content-secondary">
-                          {option.subtitle}
-                        </span>
-                      </div>
-                      {showCount && (
-                        <div className="flex shrink-0 items-center gap-2">
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      disabled={closed}
+                      onClick={() => onVote(option.id)}
+                      className="flex w-full flex-col gap-2 px-4 py-3 text-left disabled:cursor-default"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Radio selected={myVote === option.id} />
+                        <div className="flex min-w-0 flex-1 flex-col">
                           <span className="font-karla text-body font-medium text-content-primary">
-                            {count}
+                            {option.name}
                           </span>
-                          {item.pollShowWhoVoted !== false && (
-                            <div className="flex items-center">
-                              {voterIds.slice(0, MAX_AVATARS).map((voterId, i) => {
-                                const voter = memberById(voterId);
-                                if (!voter) return null;
-                                return (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    key={voterId}
-                                    src={voter.avatar}
-                                    alt=""
-                                    className="h-6 w-6 shrink-0 rounded-full border-2 border-card-light object-cover"
-                                    style={{ marginLeft: i === 0 ? 0 : -8 }}
-                                  />
-                                );
-                              })}
-                            </div>
-                          )}
+                          <span className="truncate font-karla text-subtitle text-content-secondary">
+                            {option.subtitle}
+                          </span>
+                        </div>
+                        {showCount && (
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="font-karla text-body font-medium text-content-primary">
+                              {count}
+                            </span>
+                            {item.pollShowWhoVoted !== false && (
+                              <div className="flex items-center">
+                                {voterIds.slice(0, MAX_AVATARS).map((voterId, i) => {
+                                  const voter = memberById(voterId);
+                                  if (!voter) return null;
+                                  return (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      key={voterId}
+                                      src={voter.avatar}
+                                      alt=""
+                                      className="h-6 w-6 shrink-0 rounded-full border-2 border-card-light object-cover"
+                                      style={{ marginLeft: i === 0 ? 0 : -8 }}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {resultsVisible && (
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-toggle-off">
+                          <div
+                            className="h-full rounded-full transition-[width] duration-300 ease-out"
+                            style={{ width: `${pct}%`, background: VOTE_BAR_COLOR }}
+                          />
                         </div>
                       )}
-                    </div>
-                    {resultsVisible && (
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-toggle-off">
-                        <div
-                          className="h-full rounded-full transition-[width] duration-300 ease-out"
-                          style={{ width: `${pct}%`, background: VOTE_BAR_COLOR }}
-                        />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {resultsVisible && (
+                <button
+                  type="button"
+                  onClick={() => setClosing(true)}
+                  className="w-full rounded-full py-3 text-center font-karla text-body font-semibold"
+                  style={{ background: "var(--color-brand)", color: "#fff" }}
+                >
+                  View votes
+                </button>
+              )}
+
+              {/* Always-present breathing room below the last content item (or
+                  the View votes button, when shown) — on top of the content
+                  wrapper's own pb-3, not instead of it. */}
+              <div className="h-8 shrink-0" aria-hidden />
             </div>
-
-            {resultsVisible && (
-              <button
-                type="button"
-                onClick={() => setClosing(true)}
-                className="w-full rounded-full py-3 text-center font-karla text-body font-semibold"
-                style={{ background: "var(--color-brand)", color: "#fff" }}
-              >
-                View votes
-              </button>
-            )}
-
-            {/* Always-present breathing room below the last content item (or
-                the View votes button, when shown) — on top of the content
-                wrapper's own pb-3, not instead of it. */}
-            <div className="h-8 shrink-0" aria-hidden />
-          </div>
-        </TouchScroll>
+          </TouchScroll>
+          <SheetScrollFade />
+        </div>
       </div>
     </>
   );

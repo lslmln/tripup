@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Check, CheckSquare, MagnifyingGlass, Square, X } from "@phosphor-icons/react";
 import GlassButton from "./GlassButton";
 import StatusBar from "./StatusBar";
+import SheetScrollFade from "./SheetScrollFade";
 import TouchScroll from "./TouchScroll";
 import { glassStyle } from "./glass";
 import { mockCandidates, type Candidate } from "@/lib/mock-candidates";
@@ -129,14 +130,7 @@ export default function AddMemberSheet({
               })}
             </div>
           </TouchScroll>
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-20"
-            style={{
-              background:
-                "linear-gradient(to top, var(--color-card) 0%, color-mix(in srgb, var(--color-card) 70%, transparent) 40%, color-mix(in srgb, var(--color-card) 25%, transparent) 75%, transparent 100%)",
-            }}
-            aria-hidden
-          />
+          <SheetScrollFade />
         </div>
 
         <div

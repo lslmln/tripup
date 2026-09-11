@@ -8,6 +8,7 @@ import {
   CaretRight,
   Check,
   CheckSquare,
+  MagnifyingGlass,
   MapPin,
   Square,
   XCircle,
@@ -15,10 +16,12 @@ import {
 } from "@phosphor-icons/react";
 import Toggle from "./Toggle";
 import GlassButton from "./GlassButton";
+import SheetScrollFade from "./SheetScrollFade";
 import TouchScroll from "./TouchScroll";
 import LocationSearchPanel from "./LocationSearchPanel";
 import DurationPickerSheet from "./DurationPickerSheet";
 import DateTimeFieldEditor from "./DateTimeFieldEditor";
+import { glassStyle } from "./glass";
 import type { Location } from "@/lib/mock-locations";
 import { mockMembers, type Member } from "@/lib/mock-members";
 import { getStoredMembers } from "@/lib/members-store";
@@ -325,7 +328,7 @@ export default function AddSheet({
     if (pendingScreenRef.current) return;
     const activePanel = panelRefFor(screen).current;
     if (activePanel) setBodyHeight(clampToMaxHeight(activePanel.scrollHeight));
-  }, [screen, locationsSignature, toggles.limitDuration, activeDateField]);
+  }, [screen, locationsSignature, toggles.limitDuration, activeDateField, locationQuery]);
 
   // Focus the location search input once its screen has finished fading in.
   useEffect(() => {
@@ -536,6 +539,7 @@ export default function AddSheet({
           </div>
         )}
 
+        <div className="relative">
         <TouchScroll
           className="no-scrollbar relative overflow-y-auto transition-[height] ease-[cubic-bezier(0.32,0.72,0,1)]"
           style={{ height: bodyHeight ?? undefined, transitionDuration: `${RESIZE_MS}ms` }}
@@ -768,13 +772,34 @@ export default function AddSheet({
           >
             <LocationSearchPanel
               query={locationQuery}
-              onQueryChange={setLocationQuery}
               excludeIds={locationExcludeIds}
               onSelect={handleLocationSelect}
-              inputRef={locationInputRef}
             />
           </div>
         </TouchScroll>
+        <SheetScrollFade />
+        </div>
+
+        {/* Floats near the sheet's own bottom edge, same as AddMemberSheet's
+            search bar — outside the relative wrapper above so bottom-8
+            anchors to the whole sheet, not just the (possibly short)
+            TouchScroll body. */}
+        {screen === "location" && (
+          <div
+            className="absolute inset-x-4 bottom-8 z-30 flex min-h-12 items-center gap-2 rounded-full px-4 py-2 text-content-primary"
+            style={glassStyle}
+          >
+            <MagnifyingGlass size={20} className="shrink-0" />
+            <input
+              ref={locationInputRef}
+              type="text"
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              placeholder="Search"
+              className="flex-1 bg-transparent font-karla text-body text-content-primary placeholder:text-content-secondary focus:outline-none"
+            />
+          </div>
+        )}
       </div>
 
       {durationPickerOpen && (

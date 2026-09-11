@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { CheckSquare, Square, X, Check } from "@phosphor-icons/react";
 import GlassButton from "./GlassButton";
 import StatusBar from "./StatusBar";
+import SheetScrollFade from "./SheetScrollFade";
 import TouchScroll from "./TouchScroll";
 import { sanitizeAmountInput, splitShare, formatMoney, type Bill } from "@/lib/bills";
 import type { Member } from "@/lib/mock-members";
@@ -187,6 +188,7 @@ export default function AddBillSheet({
               <div className="h-8 shrink-0" aria-hidden />
             </div>
           </TouchScroll>
+          <SheetScrollFade />
         </div>
       </div>
     </>
