@@ -44,11 +44,11 @@ const FADE_OUT_MS = 100;
 const RESIZE_MS = 220;
 const FADE_IN_MS = 160;
 
-// The sheet never grows past (phone screen height - status bar clearance),
-// matching AddMemberSheet's top-11 convention for how much of the screen a
+// The sheet never grows past (phone screen height - top clearance),
+// matching AddMemberSheet's top-17 convention for how much of the screen a
 // sheet may cover. Beyond that, its content scrolls instead of the sheet
 // (and the whole modal) growing off-screen.
-const STATUS_BAR_CLEARANCE = 44;
+const STATUS_BAR_CLEARANCE = 68;
 // Handle bar (16 margin + 6 height) + sheet's own pt-3 (12) + pb-16 (64).
 const SHEET_CHROME_HEIGHT = 16 + 6 + 12 + 64;
 
