@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Empty } from "@phosphor-icons/react";
 import StatusBar from "./StatusBar";
 import DetailHeader from "./DetailHeader";
@@ -45,6 +45,28 @@ export default function TripDetailScreen({
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  // All three tabs share one scrollable element (content just swaps), so
+  // switching away from a tall Timeline scroll position to a much shorter
+  // Balance/Transactions view clamps scrollTop down — switching back with
+  // no restore would otherwise land back at the top instead of where you
+  // were.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const savedScrollTopRef = useRef<Partial<Record<number, number>>>({});
+
+  function handleTabChange(index: number) {
+    const el = scrollRef.current;
+    if (el) savedScrollTopRef.current[activeTab] = el.scrollTop;
+    setActiveTab(index);
+  }
+
+  // Restores the tab being switched to — a no-op for a tab visited for the
+  // first time (nothing saved yet), including Timeline's own initial
+  // mount, which the "land on today" effect below handles instead.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    const saved = savedScrollTopRef.current[activeTab];
+    if (el && saved !== undefined) el.scrollTop = saved;
+  }, [activeTab]);
   const [timeline, setTimeline] = useState<TimelineSectionType[]>(() =>
     getStoredTimeline(trip.id, initialTimeline),
   );
@@ -190,11 +212,11 @@ export default function TripDetailScreen({
         <StatusBar light time="6:45" />
         <DetailHeader tripId={trip.id} title={trip.name} avatar={trip.image} />
         <div className="py-3">
-          <SegmentedControl onChange={setActiveTab} />
+          <SegmentedControl onChange={handleTabChange} />
         </div>
       </div>
       <div className="relative min-h-0 flex-1">
-        <TouchScroll className="no-scrollbar relative z-10 h-full overflow-y-auto">
+        <TouchScroll ref={scrollRef} className="no-scrollbar relative z-10 h-full overflow-y-auto">
           {activeTab === 0 && (
             <div className="flex flex-col gap-3 pt-3 pb-23">
               {timeline.map((section) => (
@@ -315,7 +337,7 @@ export default function TripDetailScreen({
           aria-hidden
         />
       </div>
-      <GlassSearchBar onAddClick={activeTab === 0 ? () => setSheetOpen(true) : undefined} />
+      {activeTab === 0 && <GlassSearchBar onAddClick={() => setSheetOpen(true)} />}
       {sheetOpen && (
         <AddSheet
           tripId={trip.id}
