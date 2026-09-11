@@ -33,7 +33,6 @@ import {
   getMockNow,
   smartActivityTitle,
 } from "@/lib/format-datetime";
-import { seedPollVotes } from "@/lib/poll";
 import type { TimelineItem } from "@/lib/mock-timeline";
 
 // Sheet-level open/close (backdrop + sheet slide).
@@ -466,6 +465,10 @@ export default function AddSheet({
   // yet either, so the destination is unknown: the entry lands on today's
   // timeline as a pending placeholder (warning icon, no location) rather
   // than waiting for a full voting simulation this prototype doesn't have.
+  // pollVotes starts empty — the other attendees' simulated votes are seeded
+  // and scheduled to arrive one at a time by TripDetailScreen, in step with
+  // their "so-and-so voted" notifications, rather than all being present
+  // from the instant the poll is created.
   function handleSavePoll() {
     const pollOptions = locations.filter((loc): loc is Location => loc !== null);
     onActivityCreated?.({
@@ -479,10 +482,7 @@ export default function AddSheet({
       pollQuestion,
       pollOptions,
       pollDeadline: Date.now() + durationMinutes * 60 * 1000,
-      pollVotes: seedPollVotes(
-        attendeeIds,
-        pollOptions.map((option) => option.id),
-      ),
+      pollVotes: {},
       pollShowWhoVoted: toggles.showWhoVoted,
       attendeeIds,
     });

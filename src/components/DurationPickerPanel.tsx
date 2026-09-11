@@ -18,6 +18,10 @@ const COLUMN_WIDTH = NUMBER_WIDTH + UNIT_WIDTH;
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+// A poll needs some time to actually run, so 0 hours + 0 min can't be a
+// reachable combination — while hours reads 0 the minutes wheel simply
+// doesn't offer 0 as an option, same as an iOS timer picker.
+const MINUTES_WHEN_NO_HOURS = MINUTES.slice(1);
 
 function WheelColumn({
   values,
@@ -145,6 +149,14 @@ export default function DurationPickerPanel({
 }) {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
+  const minuteValues = hours === 0 ? MINUTES_WHEN_NO_HOURS : MINUTES;
+
+  function handleHoursChange(h: number) {
+    // Crossing into 0 hours while minutes is also sitting at 0 would land on
+    // the disallowed 0-total combination — bump minutes up to the wheel's
+    // new floor (1) in the same update instead.
+    onChange(h * 60 + (h === 0 && mins === 0 ? 1 : mins));
+  }
 
   return (
     <>
@@ -159,14 +171,14 @@ export default function DurationPickerPanel({
           aria-hidden
         />
         <div className="relative flex items-center justify-center">
+          <WheelColumn values={HOURS} selected={hours} unit="hours" onChange={handleHoursChange} />
+          {/* Keyed on whether 0 is currently offered, so the wheel remounts
+              (and re-syncs its scroll position from `selected`) exactly when
+              its own value set changes, instead of drifting out of sync with
+              a list that changed size under it mid-scroll. */}
           <WheelColumn
-            values={HOURS}
-            selected={hours}
-            unit="hours"
-            onChange={(h) => onChange(h * 60 + mins)}
-          />
-          <WheelColumn
-            values={MINUTES}
+            key={hours === 0 ? "min-no-zero" : "min-full"}
+            values={minuteValues}
             selected={mins}
             unit="min"
             onChange={(m) => onChange(hours * 60 + m)}

@@ -21,6 +21,7 @@ import { useScrollEdges } from "@/hooks/useScrollEdges";
 import { getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
 import { formatCountdown, pickPollWinner, resolvePollItem } from "@/lib/poll";
+import { subscribeToPollVoteArrivals } from "@/lib/poll-votes-store";
 import { CURRENT_USER_ID } from "@/lib/mock-members";
 import { formatMoney, splitShare, type Bill } from "@/lib/bills";
 import type { Trip } from "@/lib/mock-trips";
@@ -73,6 +74,29 @@ export default function ActivityDetailScreen({
     }));
     setStoredTimeline(trip.id, updated);
   }
+
+  // Applies a simulated vote the moment it arrives (same module-scope
+  // schedule TripDetailScreen sets up when the poll's created), so opening
+  // straight into the poll's own detail screen still shows votes landing
+  // live instead of a stale snapshot from whenever this screen mounted.
+  // Functional setItem update, not the `item` closed over above, since this
+  // subscription is set up once and must never read a stale copy.
+  useEffect(() => {
+    return subscribeToPollVoteArrivals(({ itemId, memberId, optionId }) => {
+      setItem((prev) => {
+        if (!prev || prev.id !== itemId) return prev;
+        const next = { ...prev, pollVotes: { ...prev.pollVotes, [memberId]: optionId } };
+        const current = getStoredTimeline(trip.id, fallbackTimeline);
+        const updated = current.map((section) => ({
+          ...section,
+          items: section.items.map((existing) => (existing.id === next.id ? next : existing)),
+        }));
+        setStoredTimeline(trip.id, updated);
+        return next;
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip.id]);
 
   // Ticks the countdown once a second while the poll is still open, and
   // resolves it — winning option replaces the pending placeholder — the
@@ -354,7 +378,7 @@ export default function ActivityDetailScreen({
         />
 
         {activeTab === 1 && (
-          <div className="absolute inset-x-4 bottom-8">
+          <div className="absolute inset-x-4 bottom-8 z-30">
             <button
               type="button"
               onClick={openAddBill}

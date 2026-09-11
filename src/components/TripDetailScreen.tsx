@@ -19,21 +19,23 @@ import type { Transaction } from "@/lib/transactions";
 import { appendToSection, getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
 import { addStoredTransaction, getStoredTransactions } from "@/lib/transactions-store";
-import { resolvePollItem } from "@/lib/poll";
+import { resolvePollItem, seedPollVotes } from "@/lib/poll";
 import { computeOwed } from "@/lib/balance";
 import { formatMoney } from "@/lib/bills";
 import { formatClockTime } from "@/lib/format-datetime";
 import { scheduleNotification } from "@/lib/notifications-store";
+import { scheduleVoteArrival, subscribeToPollVoteArrivals } from "@/lib/poll-votes-store";
 
 // There's no real multi-user backend here, so incoming payments are
 // simulated: every debtor still owed gets paid off in full, one at a time,
 // this many ms apart — standing in for other members settling up on their
 // own end and the notification for each arriving in turn.
 const SIMULATED_PAYMENT_INTERVAL_MS = 5000;
-// Every other attendee's poll vote is already seeded the instant a poll is
-// created (see seedPollVotes) — the vote data itself doesn't trickle in.
-// This just paces the *notifications* about those votes so they read as
-// people responding over time instead of all landing at once.
+// Every other attendee's poll vote is simulated — this paces how long after
+// a poll's created each one's vote (and its notification) actually lands,
+// so the poll's own vote counts/bars and the "so-and-so voted" notifications
+// stay in lockstep instead of the data all existing upfront while only the
+// notifications trickle in.
 const POLL_VOTE_NOTIFICATION_INTERVAL_MS = 5000;
 
 export default function TripDetailScreen({
@@ -82,35 +84,61 @@ export default function TripDetailScreen({
       setStoredTimeline(trip.id, next);
       return next;
     });
-    schedulePollVoteNotifications(item);
+    schedulePollVoteArrivals(item);
   }
 
-  // Every other attendee's vote already exists in item.pollVotes the moment
-  // a poll is created (see seedPollVotes) — there's no real second person
-  // casting it later. This just staggers when each vote's notification
-  // shows, so it reads as people responding to the poll over time. Uses the
-  // module-scope notifications-store (not a local setTimeout) so opening
-  // the poll's own detail screen right after creating it — the obvious
-  // next thing to do — doesn't unmount this component and cancel them.
-  function schedulePollVoteNotifications(item: TimelineItem) {
-    if (!item.pending || !item.pollVotes || !item.pollOptions) return;
-    const voterIds = Object.keys(item.pollVotes);
-    voterIds.forEach((memberId, index) => {
+  // Deterministically decides who (of the other attendees) ends up voting
+  // for what — same seedPollVotes used before — but instead of writing that
+  // straight into item.pollVotes, each vote is scheduled to actually arrive
+  // (and its notification fire) one at a time. Uses the module-scope
+  // poll-votes-store (not a local setTimeout) so opening the poll's own
+  // detail screen right after creating it — the obvious next thing to do —
+  // doesn't unmount this component and cancel them.
+  function schedulePollVoteArrivals(item: TimelineItem) {
+    if (!item.pending || !item.pollOptions || !item.attendeeIds) return;
+    const seededVotes = seedPollVotes(
+      item.attendeeIds,
+      item.pollOptions.map((option) => option.id),
+    );
+    Object.entries(seededVotes).forEach(([memberId, optionId], index) => {
       const member = memberById(memberId);
-      const optionId = item.pollVotes?.[memberId];
       const option = item.pollOptions?.find((o) => o.id === optionId);
       if (!member || !option) return;
-      scheduleNotification(
-        {
-          id: `vote-${item.id}-${memberId}`,
-          icon: "vote",
-          title: "New vote",
-          message: `${member.name} voted for ${option.name}`,
-        },
+      scheduleVoteArrival(
+        item.id,
+        memberId,
+        optionId,
+        member.name,
+        option.name,
         (index + 1) * POLL_VOTE_NOTIFICATION_INTERVAL_MS,
       );
     });
   }
+
+  // Applies each simulated vote to the matching timeline item the moment it
+  // arrives, so the poll's own vote counts/bars update live instead of only
+  // the notification announcing it. Subscribed once at mount (module-scope
+  // store, same reasoning as scheduling above) rather than per-item, so
+  // votes for a poll created earlier still land even after this component
+  // remounts (e.g. navigating away and back).
+  useEffect(() => {
+    return subscribeToPollVoteArrivals(({ itemId, memberId, optionId }) => {
+      setTimeline((prev) => {
+        let changed = false;
+        const next = prev.map((section) => ({
+          ...section,
+          items: section.items.map((item) => {
+            if (item.id !== itemId) return item;
+            changed = true;
+            return { ...item, pollVotes: { ...item.pollVotes, [memberId]: optionId } };
+          }),
+        }));
+        if (!changed) return prev;
+        setStoredTimeline(trip.id, next);
+        return next;
+      });
+    });
+  }, [trip.id]);
 
   // Catches a poll's deadline passing while the user is sitting on the main
   // timeline rather than the poll's own detail screen — the pending card
