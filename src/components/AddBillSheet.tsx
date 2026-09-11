@@ -96,7 +96,9 @@ export default function AddBillSheet({
           <GlassButton ariaLabel="Close" onClick={() => setClosing(true)}>
             <X size={20} />
           </GlassButton>
-          <span className="font-karla text-body font-medium text-content-primary">Add bill</span>
+          <span className="font-karla text-body font-medium text-content-primary">
+            {initialBill ? "Edit bill" : "Add bill"}
+          </span>
           <GlassButton
             ariaLabel="Save bill"
             onClick={handleSave}

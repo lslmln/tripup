@@ -223,9 +223,11 @@ export default function PollVoteSheet({
               </div>
 
               {resultsVisible && (
+                // No onClick yet — there's no dedicated vote-breakdown view
+                // to open, and it shouldn't dismiss the sheet either (the
+                // per-option counts/avatars above already show that).
                 <button
                   type="button"
-                  onClick={() => setClosing(true)}
                   className="mt-3 w-full rounded-full py-3 text-center font-karla text-body font-semibold"
                   style={{ background: "var(--color-brand)", color: "#fff" }}
                 >

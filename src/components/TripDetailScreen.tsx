@@ -10,6 +10,8 @@ import TouchScroll from "./TouchScroll";
 import TripGlow from "./TripGlow";
 import GlassSearchBar from "./GlassSearchBar";
 import AddSheet from "./AddSheet";
+import SheetScrollFade from "./SheetScrollFade";
+import { useScrollEdges } from "@/hooks/useScrollEdges";
 import type { Trip } from "@/lib/mock-trips";
 import type { Member } from "@/lib/mock-members";
 import type { TimelineItem, TimelineSection as TimelineSectionType } from "@/lib/mock-timeline";
@@ -158,6 +160,8 @@ export default function TripDetailScreen({
   // underlying timeline/transactions actually change, not on every render.
   const owed = useMemo(() => computeOwed(timeline, transactions), [timeline, transactions]);
   const totalOwed = owed.reduce((sum, entry) => sum + entry.amount, 0);
+
+  const { atTop, atBottom } = useScrollEdges(scrollRef, [activeTab, timeline, transactions]);
 
   // Real payments come from other trip members' own devices, not anything
   // Ari does here — this simulates them arriving one at a time, spaced
@@ -320,21 +324,10 @@ export default function TripDetailScreen({
             </div>
           )}
         </TouchScroll>
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-20 h-3"
-          style={{
-            background:
-              "linear-gradient(to bottom, color-mix(in srgb, var(--color-background-detail) 25%, transparent) 0%, transparent 100%)",
-          }}
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-20"
-          style={{
-            background:
-              "linear-gradient(to top, var(--color-background-detail) 0%, color-mix(in srgb, var(--color-background-detail) 70%, transparent) 40%, color-mix(in srgb, var(--color-background-detail) 25%, transparent) 75%, transparent 100%)",
-          }}
-          aria-hidden
+        <SheetScrollFade
+          color="var(--color-background-detail)"
+          showTop={!atTop}
+          showBottom={!atBottom}
         />
       </div>
       {activeTab === 0 && <GlassSearchBar onAddClick={() => setSheetOpen(true)} />}

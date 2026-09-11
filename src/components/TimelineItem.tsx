@@ -19,6 +19,14 @@ export default function TimelineItem({
   tripId: string;
 }) {
   const answered = item.pending && (item.pollVotes?.[CURRENT_USER_ID] ?? null) !== null;
+  // Only pending items get the yellow tint — once a poll resolves, its
+  // pollOptions/etc. stay on the item (see resolvePollItem) but pending
+  // flips to false, and this shouldn't re-trigger the tint.
+  const showPendingTint = item.pending && !answered;
+  // A poll's own item stays tappable after it resolves too — it's still
+  // the same activity, just decided now — unlike a plain pre-seeded
+  // timeline item, which has no detail screen to open at all.
+  const isPollActivity = item.pending || item.pollOptions !== undefined;
 
   const content = (
     <>
@@ -51,17 +59,15 @@ export default function TimelineItem({
     </>
   );
 
-  // Only poll-pending entries have a detail screen to open right now — a
-  // decided activity isn't tappable yet.
-  if (item.pending) {
+  if (isPollActivity) {
     return (
       <Link
         href={`/trip/${tripId}/activity/${item.id}`}
         className="flex items-center gap-3 px-4 py-3 transition-transform duration-150 ease-out active:scale-[0.98]"
         style={
-          answered
-            ? undefined
-            : { background: `color-mix(in srgb, ${PENDING_COLOR} 10%, transparent)` }
+          showPendingTint
+            ? { background: `color-mix(in srgb, ${PENDING_COLOR} 10%, transparent)` }
+            : undefined
         }
       >
         {content}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   CaretLeft,
@@ -14,8 +14,10 @@ import AddBillSheet from "./AddBillSheet";
 import GlassButton from "./GlassButton";
 import PollVoteSheet from "./PollVoteSheet";
 import SegmentedControl from "./SegmentedControl";
+import SheetScrollFade from "./SheetScrollFade";
 import StatusBar from "./StatusBar";
 import TouchScroll from "./TouchScroll";
+import { useScrollEdges } from "@/hooks/useScrollEdges";
 import { getStoredTimeline, setStoredTimeline } from "@/lib/timeline-store";
 import { getStoredMembers } from "@/lib/members-store";
 import { formatCountdown, pickPollWinner, resolvePollItem } from "@/lib/poll";
@@ -28,9 +30,6 @@ import type { TimelineItem, TimelineSection } from "@/lib/mock-timeline";
 const PENDING_COLOR = "#FFDA48";
 const POLL_EMOJI = "🗳️";
 const DETAIL_TABS = ["Details", "Bill"];
-// This whole prototype's activities are food outings, so every bill sits
-// under one fixed category — no separate category picker to build.
-const BILL_CATEGORY = "Food";
 
 function findItem(sections: TimelineSection[], activityId: string): TimelineItem | null {
   for (const section of sections) {
@@ -60,6 +59,8 @@ export default function ActivityDetailScreen({
   const [activeTab, setActiveTab] = useState(0);
   const [billSheetOpen, setBillSheetOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { atTop, atBottom } = useScrollEdges(scrollRef, [activeTab, item]);
 
   // Writes the item back to the shared store (so it survives navigating
   // away and matches what the trip timeline shows) as well as local state.
@@ -185,11 +186,13 @@ export default function ActivityDetailScreen({
           </div>
         </div>
 
-        <SegmentedControl tabs={DETAIL_TABS} onChange={setActiveTab} />
+        <div className="py-3">
+          <SegmentedControl tabs={DETAIL_TABS} onChange={setActiveTab} />
+        </div>
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <TouchScroll className="no-scrollbar h-full overflow-y-auto pt-4 pb-23">
+        <TouchScroll ref={scrollRef} className="no-scrollbar h-full overflow-y-auto pt-3 pb-23">
           {activeTab === 0 ? (
           <>
           <div className="px-4">
@@ -294,7 +297,7 @@ export default function ActivityDetailScreen({
                     >
                       <div className="flex items-center justify-between px-4 py-3">
                         <span className="font-karla text-header font-medium text-content-primary">
-                          {BILL_CATEGORY}
+                          {bill.title}
                         </span>
                         <button
                           type="button"
@@ -344,6 +347,11 @@ export default function ActivityDetailScreen({
           </div>
           )}
         </TouchScroll>
+        <SheetScrollFade
+          color="var(--color-background-detail)"
+          showTop={!atTop}
+          showBottom={!atBottom}
+        />
 
         {activeTab === 1 && (
           <div className="absolute inset-x-4 bottom-8">
