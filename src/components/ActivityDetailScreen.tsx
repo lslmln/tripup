@@ -342,7 +342,7 @@ export default function ActivityDetailScreen({
             <button
               type="button"
               onClick={openAddBill}
-              className="w-full rounded-full py-3.5 text-center font-karla text-body font-semibold"
+              className="w-full rounded-full py-3 text-center font-karla text-body font-semibold"
               style={{ background: "var(--color-brand)", color: "#fff" }}
             >
               {item.bills && item.bills.length > 0 ? "Add another bill" : "Add a bill"}

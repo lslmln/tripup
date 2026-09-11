@@ -546,7 +546,7 @@ export default function AddSheet({
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={screenStyle("menu")}
           >
-            <div className="flex flex-col gap-3 px-4 pt-4">
+            <div className="flex flex-col gap-3 px-4 pt-3 pb-3">
               <SheetOption icon={<Lightning size={20} weight="fill" />} title="Activity" />
               <SheetOption
                 icon={<ListBullets size={20} />}
@@ -563,7 +563,7 @@ export default function AddSheet({
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={screenStyle("poll")}
           >
-            <div className="flex flex-col gap-4 px-4 pt-4">
+            <div className="flex flex-col gap-4 px-4 pt-3 pb-3">
               <input
                 type="text"
                 value={pollQuestion}
@@ -660,7 +660,7 @@ export default function AddSheet({
             className="absolute inset-x-0 top-0 transition-opacity ease-out"
             style={screenStyle("activity")}
           >
-            <div className="flex flex-col gap-4 px-4 pt-4">
+            <div className="flex flex-col gap-4 px-4 pt-3 pb-3">
               <input
                 type="text"
                 value={activityTitle}

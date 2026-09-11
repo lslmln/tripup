@@ -33,7 +33,7 @@ export default function LocationSearchPanel({
 
   return (
     <>
-      <div className="mx-4 mt-4 flex items-center gap-2 rounded-full bg-card-light px-4 py-3">
+      <div className="mx-4 mt-3 flex items-center gap-2 rounded-full bg-card-light px-4 py-3">
         <MagnifyingGlass size={20} className="shrink-0 text-content-secondary" />
         <input
           ref={inputRef}
@@ -45,7 +45,7 @@ export default function LocationSearchPanel({
         />
       </div>
 
-      <div className="px-4 pt-3">
+      <div className="px-4 pt-3 pb-3">
         <div className="divide-y divide-border-primary">
           {results.map((location) => (
             <button

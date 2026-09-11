@@ -123,7 +123,7 @@ export default function PollVoteSheet({
           className="no-scrollbar overflow-y-auto transition-[height] duration-200 ease-out"
           style={{ height: bodyHeight ?? undefined }}
         >
-          <div ref={contentRef} className="flex flex-col gap-4 px-4 pt-1 pb-8">
+          <div ref={contentRef} className="flex flex-col gap-4 px-4 pt-3 pb-3">
             {creator && (
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -219,12 +219,17 @@ export default function PollVoteSheet({
               <button
                 type="button"
                 onClick={() => setClosing(true)}
-                className="w-full rounded-full py-3.5 text-center font-karla text-body font-semibold"
+                className="w-full rounded-full py-3 text-center font-karla text-body font-semibold"
                 style={{ background: "var(--color-brand)", color: "#fff" }}
               >
                 View votes
               </button>
             )}
+
+            {/* Always-present breathing room below the last content item (or
+                the View votes button, when shown) — on top of the content
+                wrapper's own pb-3, not instead of it. */}
+            <div className="h-8 shrink-0" aria-hidden />
           </div>
         </TouchScroll>
       </div>

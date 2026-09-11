@@ -108,8 +108,8 @@ export default function AddBillSheet({
         </div>
 
         <div className="relative min-h-0 flex-1">
-          <TouchScroll className="no-scrollbar h-full overflow-y-auto pb-23">
-            <div className="flex flex-col gap-4 px-4 pt-1">
+          <TouchScroll className="no-scrollbar h-full overflow-y-auto">
+            <div className="flex flex-col gap-4 px-4 pt-3 pb-3">
               <input
                 type="text"
                 value={title}
@@ -182,6 +182,9 @@ export default function AddBillSheet({
                   })}
                 </div>
               </div>
+
+              {/* Always-present breathing room below the last content item. */}
+              <div className="h-8 shrink-0" aria-hidden />
             </div>
           </TouchScroll>
         </div>
